@@ -1,0 +1,168 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Public user profile for community members",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "User unique identifier" },
+        "displayName": { "type": "string", "maxLength": 100, "description": "User public display name" },
+        "email": { "type": "string", "maxLength": 150, "description": "User email address" },
+        "photoURL": { "type": "string", "maxLength": 500, "description": "Avatar image URL" },
+        "bio": { "type": "string", "maxLength": 300, "description": "User self description or signature" },
+        "role": { "type": "string", "enum": ["user", "creator", "admin"], "description": "User role" },
+        "createdAt": { "type": "string", "description": "Account registration ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "Last profile update ISO timestamp" }
+      },
+      "required": ["uid", "displayName", "email", "createdAt"]
+    },
+    "UserPrivate": {
+      "title": "UserPrivate",
+      "description": "Private user information isolated from public reads",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "User unique identifier" },
+        "email": { "type": "string", "description": "User email" },
+        "phone": { "type": "string", "maxLength": 30, "description": "Contact phone number" },
+        "shippingAddress": { "type": "string", "maxLength": 500, "description": "Shipping address for purchases" },
+        "updatedAt": { "type": "string", "description": "Last update ISO timestamp" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "Life and learning experience posts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Post identifier" },
+        "authorId": { "type": "string", "description": "Creator UID" },
+        "title": { "type": "string", "maxLength": 200, "description": "Post title" },
+        "category": { "type": "string", "enum": ["life", "study", "milestone", "tech"], "description": "Post category" },
+        "summary": { "type": "string", "maxLength": 500, "description": "Brief post summary" },
+        "content": { "type": "string", "maxLength": 20000, "description": "Full post content" },
+        "mediaType": { "type": "string", "enum": ["image", "video", "mixed", "text"], "description": "Media presentation type" },
+        "coverImage": { "type": "string", "maxLength": 500, "description": "Cover photo URL" },
+        "videoUrl": { "type": "string", "maxLength": 500, "description": "Optional video stream URL" },
+        "location": { "type": "string", "maxLength": 100, "description": "Location of recording" },
+        "date": { "type": "string", "description": "Publish date string" },
+        "tags": { "type": "array", "description": "Tags list" },
+        "likesCount": { "type": "number", "description": "Total like count" },
+        "bookmarksCount": { "type": "number", "description": "Total bookmark count" }
+      },
+      "required": ["id", "authorId", "title", "category", "content"]
+    },
+    "Insight": {
+      "title": "Insight",
+      "description": "Study insights and reflections with takeaway",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Insight identifier" },
+        "authorId": { "type": "string", "description": "Author UID" },
+        "author": { "type": "string", "maxLength": 100, "description": "Author name" },
+        "title": { "type": "string", "maxLength": 200, "description": "Insight topic title" },
+        "subject": { "type": "string", "maxLength": 50, "description": "Subject area" },
+        "difficulty": { "type": "string", "enum": ["入门探索", "进阶实战", "底层硬核"], "description": "Level" },
+        "takeaway": { "type": "string", "maxLength": 500, "description": "Core takeaway concept" },
+        "content": { "type": "string", "maxLength": 20000, "description": "Detailed notes" },
+        "mediaType": { "type": "string", "enum": ["image", "video", "mixed", "text"], "description": "Media type" },
+        "coverImage": { "type": "string", "maxLength": 500, "description": "Cover or diagram URL" },
+        "videoUrl": { "type": "string", "maxLength": 500, "description": "Video walkthrough URL" },
+        "tags": { "type": "array", "description": "Tags list" },
+        "date": { "type": "string", "description": "Publish date" },
+        "likesCount": { "type": "number", "description": "Likes counter" }
+      },
+      "required": ["id", "authorId", "title", "subject", "takeaway", "content"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Curated store product",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Product ID" },
+        "name": { "type": "string", "maxLength": 200, "description": "Product name" },
+        "category": { "type": "string", "enum": ["electronics", "books", "snacks", "travel"], "description": "Category" },
+        "price": { "type": "number", "description": "Price in RMB" },
+        "originalPrice": { "type": "number", "description": "Original price" },
+        "rating": { "type": "number", "description": "Rating score" },
+        "reviewsCount": { "type": "number", "description": "Review count" },
+        "image": { "type": "string", "maxLength": 500, "description": "Product image" },
+        "tag": { "type": "string", "maxLength": 50, "description": "Product tag" },
+        "badge": { "type": "string", "maxLength": 50, "description": "Badge description" },
+        "highlightReason": { "type": "string", "maxLength": 500, "description": "Creator recommendation rationale" },
+        "description": { "type": "string", "maxLength": 5000, "description": "Full product description" },
+        "inStock": { "type": "boolean", "description": "Stock status" },
+        "likesCount": { "type": "number", "description": "Likes" },
+        "plantedCount": { "type": "number", "description": "Wishlist count" }
+      },
+      "required": ["id", "name", "category", "price", "highlightReason"]
+    },
+    "Story": {
+      "title": "Story",
+      "description": "Community user-submitted story",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Story ID" },
+        "authorId": { "type": "string", "description": "Author UID" },
+        "author": { "type": "string", "maxLength": 100, "description": "Author display name" },
+        "authorAvatar": { "type": "string", "maxLength": 500, "description": "Avatar URL" },
+        "roleBadge": { "type": "string", "maxLength": 100, "description": "Role or bio tag" },
+        "title": { "type": "string", "maxLength": 200, "description": "Story title" },
+        "category": { "type": "string", "maxLength": 50, "description": "Story category" },
+        "summary": { "type": "string", "maxLength": 500, "description": "Summary" },
+        "content": { "type": "string", "maxLength": 20000, "description": "Full story" },
+        "coverImage": { "type": "string", "maxLength": 500, "description": "Cover image URL" },
+        "videoUrl": { "type": "string", "maxLength": 500, "description": "Video URL" },
+        "tags": { "type": "array", "description": "Tags" },
+        "date": { "type": "string", "description": "Publish date" },
+        "likesCount": { "type": "number", "description": "Likes counter" }
+      },
+      "required": ["id", "authorId", "title", "content", "summary"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "User product order records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Order number" },
+        "userId": { "type": "string", "description": "Purchaser UID" },
+        "date": { "type": "string", "description": "Order date" },
+        "totalAmount": { "type": "number", "description": "Total paid amount" },
+        "receiverName": { "type": "string", "maxLength": 100, "description": "Receiver name" },
+        "receiverAddress": { "type": "string", "maxLength": 500, "description": "Receiver address" },
+        "receiverPhone": { "type": "string", "maxLength": 30, "description": "Receiver phone" },
+        "status": { "type": "string", "enum": ["paid", "shipping", "completed"], "description": "Order status" }
+      },
+      "required": ["id", "userId", "totalAmount", "receiverName", "receiverAddress", "receiverPhone", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Public user profile directory"
+    },
+    "/users/{userId}/private/info": {
+      "schema": { "$ref": "#/entities/UserPrivate" },
+      "description": "Isolated private user profile with contact details"
+    },
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/Post" },
+      "description": "Life and learning experiences"
+    },
+    "/insights/{insightId}": {
+      "schema": { "$ref": "#/entities/Insight" },
+      "description": "Study insights and mental models"
+    },
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Curated store catalog"
+    },
+    "/stories/{storyId}": {
+      "schema": { "$ref": "#/entities/Story" },
+      "description": "Community user stories"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Purchased orders"
+    }
+  }
+}

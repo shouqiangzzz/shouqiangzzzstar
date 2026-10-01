@@ -5,11 +5,13 @@ import {
   MessageCircle, 
   MapPin, 
   Calendar, 
+  Clock,
   Play, 
   Images, 
   FileText 
 } from 'lucide-react';
 import { LifePost } from '../types';
+import { calculateReadingTime } from '../utils/readingTime';
 
 interface LifePostCardProps {
   post: LifePost;
@@ -26,6 +28,8 @@ export const LifePostCard: React.FC<LifePostCardProps> = ({
   onLike,
   onOpenDetail
 }) => {
+  const readingTime = calculateReadingTime(post.content);
+
   const getCategoryLabel = (cat: string) => {
     switch (cat) {
       case 'life': return { label: '生活日常', color: 'bg-emerald-100 text-emerald-800' };
@@ -100,9 +104,16 @@ export const LifePostCard: React.FC<LifePostCardProps> = ({
       <div className="p-5 flex-1 flex flex-col justify-between">
         <div>
           {/* Date & Read indicator */}
-          <div className="flex items-center gap-2 text-xs text-stone-400 mb-2">
-            <Calendar className="w-3.5 h-3.5" />
-            <span>{post.date}</span>
+          <div className="flex items-center gap-2.5 text-xs text-stone-400 mb-2">
+            <div className="flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>{post.date}</span>
+            </div>
+            <span>·</span>
+            <div className="flex items-center gap-1 text-amber-700 font-medium bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 text-[11px]">
+              <Clock className="w-3 h-3 text-amber-600" />
+              <span>{readingTime.label}</span>
+            </div>
           </div>
 
           {/* Title */}

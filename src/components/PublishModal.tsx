@@ -7,24 +7,28 @@ import {
   Video, 
   Image as ImageIcon, 
   FileText, 
-  Plus 
+  Plus,
+  GraduationCap,
+  Lightbulb
 } from 'lucide-react';
-import { LifePost, ProductItem, MediaType, PostCategory, ProductCategory } from '../types';
+import { LifePost, ProductItem, StudyInsight, MediaType, PostCategory, ProductCategory } from '../types';
 
 interface PublishModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddPost: (post: LifePost) => void;
   onAddProduct: (product: ProductItem) => void;
+  onAddInsight?: (insight: StudyInsight) => void;
 }
 
 export const PublishModal: React.FC<PublishModalProps> = ({
   isOpen,
   onClose,
   onAddPost,
-  onAddProduct
+  onAddProduct,
+  onAddInsight
 }) => {
-  const [activeType, setActiveType] = useState<'post' | 'product'>('post');
+  const [activeType, setActiveType] = useState<'post' | 'insight' | 'product'>('post');
 
   // Post form state
   const [postTitle, setPostTitle] = useState('');
@@ -36,6 +40,17 @@ export const PublishModal: React.FC<PublishModalProps> = ({
   const [postCoverImage, setPostCoverImage] = useState('');
   const [postVideoUrl, setPostVideoUrl] = useState('');
   const [postTags, setPostTags] = useState('');
+
+  // Insight form state
+  const [insightTitle, setInsightTitle] = useState('');
+  const [insightSubject, setInsightSubject] = useState('计算机底层');
+  const [insightDifficulty, setInsightDifficulty] = useState<'入门探索' | '进阶实战' | '底层硬核'>('进阶实战');
+  const [insightTakeaway, setInsightTakeaway] = useState('');
+  const [insightContent, setInsightContent] = useState('');
+  const [insightMediaType, setInsightMediaType] = useState<MediaType>('mixed');
+  const [insightCoverImage, setInsightCoverImage] = useState('');
+  const [insightVideoUrl, setInsightVideoUrl] = useState('');
+  const [insightTags, setInsightTags] = useState('');
 
   // Product form state
   const [prodName, setProdName] = useState('');
@@ -76,6 +91,39 @@ export const PublishModal: React.FC<PublishModalProps> = ({
     };
 
     onAddPost(newPost);
+    onClose();
+  };
+
+  const handleInsightSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!insightTitle.trim() || !insightContent.trim() || !insightTakeaway.trim()) return;
+
+    const tags = insightTags.split(/[,，、 ]+/).map(t => t.trim()).filter(Boolean);
+    const cover = insightCoverImage.trim() || 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80';
+
+    const newInsight: StudyInsight = {
+      id: `insight-${Date.now()}`,
+      title: insightTitle.trim(),
+      subject: insightSubject,
+      difficulty: insightDifficulty,
+      date: new Date().toISOString().split('T')[0],
+      author: 'Shouqiang',
+      authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
+      takeaway: insightTakeaway.trim(),
+      content: insightContent.trim(),
+      mediaType: insightMediaType,
+      coverImage: cover,
+      images: [cover],
+      videoUrl: insightVideoUrl.trim() || undefined,
+      videoDuration: insightVideoUrl.trim() ? '0:20' : undefined,
+      tags: tags.length > 0 ? tags : ['学习心得', insightSubject],
+      likesCount: 1,
+      comments: []
+    };
+
+    if (onAddInsight) {
+      onAddInsight(newInsight);
+    }
     onClose();
   };
 
@@ -125,7 +173,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
             </div>
             <div>
               <h2 className="font-bold text-stone-900 text-base">创作者工作室 · 内容发布</h2>
-              <p className="text-stone-500 text-xs">发布个人经历图文视频，或上架自用严选好物</p>
+              <p className="text-stone-500 text-xs">发布经历、学习心得感悟，或上架自用严选好物</p>
             </div>
           </div>
           <button
@@ -137,34 +185,46 @@ export const PublishModal: React.FC<PublishModalProps> = ({
         </div>
 
         {/* Tab switch */}
-        <div className="flex border-b border-stone-200 px-6 pt-2 bg-stone-50/50">
+        <div className="flex border-b border-stone-200 px-6 pt-2 bg-stone-50/50 overflow-x-auto">
           <button
             onClick={() => setActiveType('post')}
-            className={`flex items-center gap-2 py-2.5 px-4 text-xs sm:text-sm font-semibold border-b-2 transition-all ${
+            className={`flex items-center gap-2 py-2.5 px-3.5 text-xs sm:text-sm font-semibold border-b-2 shrink-0 transition-all ${
               activeType === 'post'
                 ? 'border-amber-600 text-amber-900 bg-white rounded-t-lg'
                 : 'border-transparent text-stone-500 hover:text-stone-800'
             }`}
           >
-            <BookOpen className="w-4 h-4" />
-            <span>发布生活与学习经历</span>
+            <BookOpen className="w-4 h-4 text-emerald-600" />
+            <span>生活与经历</span>
+          </button>
+
+          <button
+            onClick={() => setActiveType('insight')}
+            className={`flex items-center gap-2 py-2.5 px-3.5 text-xs sm:text-sm font-semibold border-b-2 shrink-0 transition-all ${
+              activeType === 'insight'
+                ? 'border-indigo-600 text-indigo-900 bg-white rounded-t-lg'
+                : 'border-transparent text-stone-500 hover:text-stone-800'
+            }`}
+          >
+            <GraduationCap className="w-4 h-4 text-indigo-600" />
+            <span>学习心得与感悟</span>
           </button>
 
           <button
             onClick={() => setActiveType('product')}
-            className={`flex items-center gap-2 py-2.5 px-4 text-xs sm:text-sm font-semibold border-b-2 transition-all ${
+            className={`flex items-center gap-2 py-2.5 px-3.5 text-xs sm:text-sm font-semibold border-b-2 shrink-0 transition-all ${
               activeType === 'product'
                 ? 'border-amber-600 text-amber-900 bg-white rounded-t-lg'
                 : 'border-transparent text-stone-500 hover:text-stone-800'
             }`}
           >
-            <ShoppingBag className="w-4 h-4" />
-            <span>上架精选自用好物</span>
+            <ShoppingBag className="w-4 h-4 text-amber-600" />
+            <span>自用好物</span>
           </button>
         </div>
 
         {/* Form Body */}
-        {activeType === 'post' ? (
+        {activeType === 'post' && (
           <form onSubmit={handlePostSubmit} className="overflow-y-auto p-6 space-y-4">
             <div>
               <label className="block text-xs font-semibold text-stone-700 mb-1">
@@ -303,7 +363,145 @@ export const PublishModal: React.FC<PublishModalProps> = ({
               </button>
             </div>
           </form>
-        ) : (
+        )}
+
+        {/* Insight Form */}
+        {activeType === 'insight' && (
+          <form onSubmit={handleInsightSubmit} className="overflow-y-auto p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-1">
+                心得主题 / 命题 <span className="text-indigo-600">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="例如：理解现代异步编程模型：从回调地狱到协程调度的思维跃迁"
+                value={insightTitle}
+                onChange={(e) => setInsightTitle(e.target.value)}
+                className="w-full px-3.5 py-2 text-sm bg-stone-50 border border-stone-200 rounded-xl outline-hidden focus:border-indigo-500 focus:bg-white"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">学科领域</label>
+                <select
+                  value={insightSubject}
+                  onChange={(e) => setInsightSubject(e.target.value)}
+                  className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl outline-hidden focus:border-indigo-500"
+                >
+                  <option value="计算机底层">计算机底层</option>
+                  <option value="前端与架构">前端与架构</option>
+                  <option value="算法思想">算法思想</option>
+                  <option value="学习方法论">学习方法论</option>
+                  <option value="工程实践">工程实践</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">难度等级</label>
+                <select
+                  value={insightDifficulty}
+                  onChange={(e) => setInsightDifficulty(e.target.value as any)}
+                  className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl outline-hidden focus:border-indigo-500"
+                >
+                  <option value="入门探索">入门探索</option>
+                  <option value="进阶实战">进阶实战</option>
+                  <option value="底层硬核">底层硬核</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
+                <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+                <span>一句话核心顿悟 / Takeaway <span className="text-indigo-600">*</span></span>
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="一针见血概括这篇心得的核心精髓"
+                value={insightTakeaway}
+                onChange={(e) => setInsightTakeaway(e.target.value)}
+                className="w-full px-3.5 py-2 text-xs sm:text-sm bg-indigo-50/50 border border-indigo-200 rounded-xl outline-hidden focus:border-indigo-500 focus:bg-white text-indigo-950 font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-1">
+                详细正文 (支持Markdown) <span className="text-indigo-600">*</span>
+              </label>
+              <textarea
+                required
+                rows={6}
+                placeholder="写下完整的理解过程、逻辑推导、对比反思与代码/概念总结..."
+                value={insightContent}
+                onChange={(e) => setInsightContent(e.target.value)}
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-stone-200 rounded-xl outline-hidden focus:border-indigo-500 focus:bg-white resize-y"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
+                  <ImageIcon className="w-3.5 h-3.5 text-stone-400" />
+                  <span>配图 / 架构图解 URL</span>
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={insightCoverImage}
+                  onChange={(e) => setInsightCoverImage(e.target.value)}
+                  className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl outline-hidden focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
+                  <Video className="w-3.5 h-3.5 text-stone-400" />
+                  <span>视频文件 URL (支持mp4)</span>
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://...mp4"
+                  value={insightVideoUrl}
+                  onChange={(e) => setInsightVideoUrl(e.target.value)}
+                  className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl outline-hidden focus:border-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-1">标签</label>
+              <input
+                type="text"
+                placeholder="例如：操作系统 架构 学习心得"
+                value={insightTags}
+                onChange={(e) => setInsightTags(e.target.value)}
+                className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl outline-hidden focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="pt-3 border-t border-stone-200 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-medium text-stone-600 hover:bg-stone-100 rounded-xl"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-xs transition-colors"
+              >
+                发布到学习心得
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Product Form */}
+        {activeType === 'product' && (
           <form onSubmit={handleProductSubmit} className="overflow-y-auto p-6 space-y-4">
             <div>
               <label className="block text-xs font-semibold text-stone-700 mb-1">

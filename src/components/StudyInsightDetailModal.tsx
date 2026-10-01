@@ -2,58 +2,55 @@ import React, { useState } from 'react';
 import { 
   X, 
   Heart, 
-  Bookmark, 
-  MapPin, 
-  Calendar, 
-  Clock,
   Send, 
-  Share2,
+  Share2, 
   CheckCircle,
-  Play
+  Calendar,
+  Clock,
+  Sparkles,
+  Play,
+  Lightbulb
 } from 'lucide-react';
-import { LifePost, Comment } from '../types';
+import { StudyInsight, Comment } from '../types';
 import { calculateReadingTime } from '../utils/readingTime';
 
-interface LifePostDetailModalProps {
-  post: LifePost | null;
+interface StudyInsightDetailModalProps {
+  insight: StudyInsight | null;
   onClose: () => void;
-  isBookmarked: boolean;
-  onToggleBookmark: (id: string) => void;
   onLike: (id: string) => void;
-  onAddComment: (postId: string, comment: Comment) => void;
+  onAddComment: (insightId: string, comment: Comment) => void;
 }
 
-export const LifePostDetailModal: React.FC<LifePostDetailModalProps> = ({
-  post,
+export const StudyInsightDetailModal: React.FC<StudyInsightDetailModalProps> = ({
+  insight,
   onClose,
-  isBookmarked,
-  onToggleBookmark,
   onLike,
   onAddComment
 }) => {
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [commentText, setCommentText] = useState('');
   const [authorName, setAuthorName] = useState('');
   const [copied, setCopied] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  if (!post) return null;
+  if (!insight) return null;
 
-  const readingTime = calculateReadingTime(post.content);
+  const readingTime = calculateReadingTime(insight.content);
+  const images = insight.images && insight.images.length > 0 ? insight.images : (insight.coverImage ? [insight.coverImage] : []);
 
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
 
     const newComment: Comment = {
-      id: `c-${Date.now()}`,
-      author: authorName.trim() || '热心读者',
+      id: `ic-${Date.now()}`,
+      author: authorName.trim() || '求知同行者',
       avatar: `https://images.unsplash.com/photo-${1535713875002 + Math.floor(Math.random() * 100)}?auto=format&fit=crop&w=120&q=80`,
       content: commentText.trim(),
       date: new Date().toISOString().split('T')[0],
       likes: 1
     };
 
-    onAddComment(post.id, newComment);
+    onAddComment(insight.id, newComment);
     setCommentText('');
   };
 
@@ -72,25 +69,21 @@ export const LifePostDetailModal: React.FC<LifePostDetailModalProps> = ({
         {/* Header Bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 bg-stone-50/80 sticky top-0 z-20">
           <div className="flex items-center gap-2 text-xs text-stone-500 flex-wrap">
-            <span className="font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
-              {post.category === 'life' ? '生活日常' : post.category === 'study' ? '深度学习' : post.category === 'tech' ? '数码探索' : '人生里程碑'}
+            <span className="font-semibold text-indigo-800 bg-indigo-100 px-2 py-0.5 rounded-full">
+              {insight.subject}
             </span>
+            {insight.difficulty && (
+              <span className="text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full font-medium">
+                {insight.difficulty}
+              </span>
+            )}
             <span className="hidden sm:inline">·</span>
-            <span className="hidden sm:inline">{post.date}</span>
+            <span className="hidden sm:inline">{insight.date}</span>
             <span className="hidden sm:inline">·</span>
-            <span className="flex items-center gap-1 text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 font-medium">
-              <Clock className="w-3 h-3 text-amber-600" />
+            <span className="flex items-center gap-1 text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200/60 font-medium">
+              <Clock className="w-3 h-3 text-indigo-600" />
               <span>预计阅读 {readingTime.minutes} 分钟</span>
             </span>
-            {post.location && (
-              <>
-                <span>·</span>
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-rose-500" />
-                  {post.location}
-                </span>
-              </>
-            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -112,14 +105,15 @@ export const LifePostDetailModal: React.FC<LifePostDetailModalProps> = ({
 
         {/* Scrollable Content */}
         <div className="overflow-y-auto px-6 py-6 space-y-6">
-          {/* Post Title & Meta */}
+          {/* Title & Metadata Card */}
           <div className="space-y-3">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold font-serif text-stone-900 leading-snug">
-              {post.title}
+              {insight.title}
             </h1>
+
             <div className="flex flex-wrap items-center gap-3 text-xs text-stone-500 py-2 px-3 rounded-xl bg-stone-50 border border-stone-100">
-              <div className="flex items-center gap-1.5 font-medium text-amber-800">
-                <Clock className="w-3.5 h-3.5 text-amber-600" />
+              <div className="flex items-center gap-1.5 font-medium text-indigo-800">
+                <Clock className="w-3.5 h-3.5 text-indigo-600" />
                 <span>预计阅读时长：约 {readingTime.minutes} 分钟</span>
               </div>
               <span>·</span>
@@ -127,25 +121,42 @@ export const LifePostDetailModal: React.FC<LifePostDetailModalProps> = ({
               <span>·</span>
               <div className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-stone-400" />
-                <span>发布于 {post.date}</span>
+                <span>发布于 {insight.date}</span>
               </div>
+              {insight.author && (
+                <>
+                  <span>·</span>
+                  <span className="font-medium text-stone-700">作者：{insight.author}</span>
+                </>
+              )}
             </div>
           </div>
 
-          {/* Media Player Section */}
-          {post.videoUrl && (
+          {/* Core Takeaway Callout Box */}
+          <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200/80 shadow-xs">
+            <div className="flex items-center gap-2 font-bold text-sm text-indigo-900 mb-1.5">
+              <Lightbulb className="w-4 h-4 text-amber-500 fill-amber-400" />
+              <span>核心心得感悟与底层提炼：</span>
+            </div>
+            <p className="text-xs sm:text-sm text-indigo-950 leading-relaxed font-medium">
+              {insight.takeaway}
+            </p>
+          </div>
+
+          {/* Video Player Section */}
+          {insight.videoUrl && (
             <div className="rounded-xl overflow-hidden bg-black shadow-inner">
               <div className="p-2 bg-stone-900 text-stone-300 text-xs flex items-center justify-between">
                 <span className="flex items-center gap-1.5 font-medium">
-                  <Play className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                  现场超清视频记录
+                  <Play className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
+                  配套视频演示与讲解
                 </span>
-                <span className="text-[11px] text-stone-400">{post.videoDuration || '0:15'}</span>
+                <span className="text-[11px] text-stone-400">{insight.videoDuration || '0:15'}</span>
               </div>
               <video 
                 controls 
-                poster={post.coverImage}
-                src={post.videoUrl} 
+                poster={insight.coverImage}
+                src={insight.videoUrl} 
                 className="w-full max-h-[460px] aspect-video object-contain bg-black"
               >
                 您的浏览器不支持视频播放。
@@ -154,24 +165,24 @@ export const LifePostDetailModal: React.FC<LifePostDetailModalProps> = ({
           )}
 
           {/* Image Gallery */}
-          {post.images && post.images.length > 0 && !post.videoUrl && (
+          {images.length > 0 && !insight.videoUrl && (
             <div className="space-y-3">
               <div className="aspect-16/9 rounded-xl overflow-hidden bg-stone-100 border border-stone-200">
                 <img
-                  src={post.images[activeImageIndex] || post.coverImage}
-                  alt={post.title}
+                  src={images[activeImageIndex]}
+                  alt={insight.title}
                   className="w-full h-full object-cover"
                 />
               </div>
 
-              {post.images.length > 1 && (
+              {images.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto pb-1">
-                  {post.images.map((img, idx) => (
+                  {images.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setActiveImageIndex(idx)}
                       className={`relative w-20 h-14 rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
-                        activeImageIndex === idx ? 'border-amber-500 scale-95' : 'border-transparent opacity-70 hover:opacity-100'
+                        activeImageIndex === idx ? 'border-indigo-500 scale-95' : 'border-transparent opacity-70 hover:opacity-100'
                       }`}
                     >
                       <img src={img} alt="" className="w-full h-full object-cover" />
@@ -182,9 +193,9 @@ export const LifePostDetailModal: React.FC<LifePostDetailModalProps> = ({
             </div>
           )}
 
-          {/* Post Body (Formatted Text) */}
-          <div className="prose prose-stone max-w-none text-stone-700 text-sm sm:text-base leading-relaxed space-y-4 font-normal">
-            {post.content.split('\n\n').map((paragraph, index) => {
+          {/* Formatted Text Content */}
+          <div className="prose prose-stone max-w-none text-stone-700 text-sm sm:text-base leading-relaxed space-y-4">
+            {insight.content.split('\n\n').map((paragraph, index) => {
               if (paragraph.startsWith('### ')) {
                 return (
                   <h3 key={index} className="text-lg sm:text-xl font-bold font-serif text-stone-900 mt-6 mb-2">
@@ -194,7 +205,7 @@ export const LifePostDetailModal: React.FC<LifePostDetailModalProps> = ({
               }
               if (paragraph.startsWith('#### ')) {
                 return (
-                  <h4 key={index} className="text-base sm:text-lg font-semibold text-stone-800 mt-4 mb-2">
+                  <h4 key={index} className="text-base font-semibold text-stone-800 mt-4 mb-2">
                     {paragraph.replace('#### ', '')}
                   </h4>
                 );
@@ -220,84 +231,69 @@ export const LifePostDetailModal: React.FC<LifePostDetailModalProps> = ({
           </div>
 
           {/* Tags */}
-          <div className="flex flex-wrap gap-2 pt-4 border-t border-stone-100">
-            {post.tags.map((tag) => (
+          <div className="flex flex-wrap gap-1.5 pt-4 border-t border-stone-100">
+            {insight.tags.map((tag) => (
               <span key={tag} className="text-xs px-2.5 py-1 rounded-full bg-stone-100 text-stone-700 font-medium">
                 #{tag}
               </span>
             ))}
           </div>
 
-          {/* Interaction Bar */}
-          <div className="flex items-center justify-between py-4 px-5 rounded-xl bg-stone-50 border border-stone-200">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => onLike(post.id)}
-                className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg bg-white border border-stone-200 shadow-xs hover:border-rose-300 text-stone-700 hover:text-rose-600 transition-colors"
-              >
-                <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-                <span>点赞 ({post.likesCount})</span>
-              </button>
-
-              <button
-                onClick={() => onToggleBookmark(post.id)}
-                className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg border shadow-xs transition-colors ${
-                  isBookmarked
-                    ? 'bg-amber-500 text-white border-amber-600'
-                    : 'bg-white text-stone-700 border-stone-200 hover:border-amber-300'
-                }`}
-              >
-                <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
-                <span>{isBookmarked ? '已收藏' : '收藏'}</span>
-              </button>
+          {/* Like Interaction */}
+          <div className="flex items-center justify-between p-4 rounded-xl bg-indigo-50/50 border border-indigo-100">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-indigo-600" />
+              <span className="text-xs text-stone-600">觉得这篇心得对你有启发？给作者点赞支持吧～</span>
             </div>
 
-            <span className="text-xs text-stone-500">
-              {post.comments.length} 条读者讨论
-            </span>
+            <button
+              onClick={() => onLike(insight.id)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors"
+            >
+              <Heart className="w-4 h-4 fill-white" />
+              <span>获得启发 ({insight.likesCount})</span>
+            </button>
           </div>
 
-          {/* Comments Section */}
+          {/* Comments / Discussions */}
           <div className="space-y-4 pt-2">
-            <h3 className="font-bold text-base text-stone-900 flex items-center gap-2">
-              <span>读者留言 & 交流</span>
-              <span className="text-xs font-normal text-stone-500">（支持任意读者发言交流）</span>
+            <h3 className="font-bold text-base text-stone-900">
+              探讨与思想碰撞 ({insight.comments.length})
             </h3>
 
-            {/* Comment Form */}
-            <form onSubmit={handleCommentSubmit} className="space-y-2 bg-stone-50/70 p-4 rounded-xl border border-stone-200">
+            {/* Form */}
+            <form onSubmit={handleCommentSubmit} className="space-y-2 bg-stone-50 p-4 rounded-xl border border-stone-200">
               <input
                 type="text"
-                placeholder="你的昵称（选填，默认：热心读者）"
+                placeholder="你的昵称（选填，默认：求知同行者）"
                 value={authorName}
                 onChange={(e) => setAuthorName(e.target.value)}
-                className="w-full px-3 py-1.5 text-xs bg-white border border-stone-200 rounded-lg outline-hidden focus:border-amber-500"
+                className="w-full px-3 py-1.5 text-xs bg-white border border-stone-200 rounded-lg outline-hidden focus:border-indigo-500"
               />
               <div className="flex gap-2">
                 <textarea
                   rows={2}
-                  placeholder="写下你的想法、提问或共鸣..."
+                  placeholder="写下你的理解、质疑、补充或学习感受..."
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  className="flex-1 px-3 py-2 text-xs sm:text-sm bg-white border border-stone-200 rounded-lg outline-hidden focus:border-amber-500 resize-none"
+                  className="flex-1 px-3 py-2 text-xs sm:text-sm bg-white border border-stone-200 rounded-lg outline-hidden focus:border-indigo-500 resize-none"
                 />
                 <button
                   type="submit"
                   disabled={!commentText.trim()}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg flex items-center gap-1 self-end transition-colors"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg flex items-center gap-1 self-end transition-colors"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>发送</span>
+                  <span>交流</span>
                 </button>
               </div>
             </form>
 
-            {/* Comment List */}
-            <div className="space-y-3">
-              {post.comments.length === 0 ? (
-                <p className="text-xs text-stone-400 py-3 text-center">暂无留言，来做第一个留言的人吧～</p>
+            <div className="space-y-2.5">
+              {insight.comments.length === 0 ? (
+                <p className="text-xs text-stone-400 py-2 text-center">暂无讨论，欢迎分享你的独到见解～</p>
               ) : (
-                post.comments.map((comment) => (
+                insight.comments.map((comment) => (
                   <div key={comment.id} className="flex gap-3 p-3 rounded-xl bg-stone-50 border border-stone-100">
                     <img
                       src={comment.avatar}

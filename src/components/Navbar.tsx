@@ -7,8 +7,12 @@ import {
   Heart, 
   PlusCircle, 
   Search,
-  ShoppingCart
+  ShoppingCart,
+  GraduationCap,
+  User,
+  LogIn
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
   activeTab: string;
@@ -19,8 +23,11 @@ interface NavbarProps {
   cartCount: number;
   onOpenPublish: () => void;
   onOpenShareStory: () => void;
+  onOpenShareInsight: () => void;
   onOpenCart: () => void;
   onOpenPlanted: () => void;
+  onOpenAuth: (mode?: 'login' | 'register') => void;
+  onOpenProfile: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -32,9 +39,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   cartCount,
   onOpenPublish,
   onOpenShareStory,
+  onOpenShareInsight,
   onOpenCart,
-  onOpenPlanted
+  onOpenPlanted,
+  onOpenAuth,
+  onOpenProfile
 }) => {
+  const { currentUser, userProfile } = useAuth();
+
   return (
     <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-stone-200/80 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -42,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Logo & Brand */}
           <div 
             onClick={() => setActiveTab('all')}
-            className="flex items-center gap-2.5 cursor-pointer select-none group"
+            className="flex items-center gap-2.5 cursor-pointer select-none group shrink-0"
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-rose-500 flex items-center justify-center text-white shadow-sm shadow-amber-500/20 group-hover:scale-105 transition-transform duration-200">
               <Sparkles className="w-5 h-5 text-white animate-pulse" />
@@ -52,12 +64,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="font-bold text-lg text-stone-900 tracking-tight font-serif">ShouqiangStar</span>
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">星芒志</span>
               </div>
-              <p className="text-[11px] text-stone-500 hidden sm:block">生活 · 经历 · 精选好物 · 故事分享</p>
+              <p className="text-[11px] text-stone-500 hidden sm:block">生活 · 经历 · 学习心得 · 好物社区</p>
             </div>
           </div>
 
           {/* Navigation Links (Desktop) */}
-          <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
+          <nav className="hidden lg:flex items-center gap-1 text-sm font-medium">
             <button
               onClick={() => setActiveTab('all')}
               className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
@@ -80,6 +92,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <BookOpen className="w-4 h-4 text-emerald-500" />
               生活与经历
+            </button>
+
+            <button
+              onClick={() => setActiveTab('insights')}
+              className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                activeTab === 'insights'
+                  ? 'bg-stone-900 text-white shadow-xs'
+                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+              }`}
+            >
+              <GraduationCap className="w-4 h-4 text-indigo-500" />
+              学习心得
             </button>
 
             <button
@@ -108,15 +132,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           {/* Search Bar & Actions */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             {/* Search Input */}
-            <div className="relative w-36 sm:w-56 md:w-64">
+            <div className="relative w-32 sm:w-48 md:w-56">
               <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="搜索经历、好物或故事..."
+                placeholder="搜索心得、经历、好物..."
                 className="w-full pl-8 pr-3 py-1.5 bg-stone-100/80 hover:bg-stone-100 focus:bg-white text-xs sm:text-sm rounded-lg border border-transparent focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-hidden transition-all text-stone-800 placeholder-stone-400"
               />
               {searchQuery && (
@@ -157,28 +181,45 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </button>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-1.5">
+            {/* User Auth or Profile Button */}
+            {currentUser && userProfile ? (
               <button
-                onClick={onOpenShareStory}
-                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-stone-200 text-stone-700 hover:border-stone-400 hover:bg-stone-50 transition-colors"
+                onClick={onOpenProfile}
+                className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-xl bg-stone-100 hover:bg-amber-50 border border-stone-200 transition-colors"
+                title="打开用户中心"
               >
-                <span>分享故事</span>
+                <img
+                  src={userProfile.photoURL}
+                  alt={userProfile.displayName}
+                  className="w-6 h-6 rounded-full object-cover border border-amber-300"
+                />
+                <span className="text-xs font-semibold text-stone-800 hidden sm:inline max-w-[80px] truncate">
+                  {userProfile.displayName}
+                </span>
               </button>
+            ) : (
+              <button
+                onClick={() => onOpenAuth('register')}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-semibold transition-colors"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>注册 / 登录</span>
+              </button>
+            )}
 
-              <button
-                onClick={onOpenPublish}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white shadow-xs transition-all"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">发布</span>
-              </button>
-            </div>
+            {/* Action Publish Button */}
+            <button
+              onClick={onOpenPublish}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white shadow-xs transition-all"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span className="hidden sm:inline">发布</span>
+            </button>
           </div>
         </div>
 
         {/* Mobile Navigation Row */}
-        <div className="md:hidden flex items-center justify-between py-2 border-t border-stone-100 overflow-x-auto gap-1 text-xs">
+        <div className="lg:hidden flex items-center justify-between py-2 border-t border-stone-100 overflow-x-auto gap-1 text-xs">
           <button
             onClick={() => setActiveTab('all')}
             className={`px-2.5 py-1 rounded-md shrink-0 ${
@@ -194,7 +235,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
-            生活与经历
+            生活经历
+          </button>
+          <button
+            onClick={() => setActiveTab('insights')}
+            className={`px-2.5 py-1 rounded-md shrink-0 flex items-center gap-1 ${
+              activeTab === 'insights' ? 'bg-stone-900 text-white font-medium' : 'text-stone-600'
+            }`}
+          >
+            <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
+            学习心得
           </button>
           <button
             onClick={() => setActiveTab('products')}
@@ -213,12 +263,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <MessageSquare className="w-3.5 h-3.5 text-rose-500" />
             故事墙
-          </button>
-          <button
-            onClick={onOpenShareStory}
-            className="px-2.5 py-1 rounded-md shrink-0 text-amber-600 font-medium"
-          >
-            + 讲个故事
           </button>
         </div>
       </div>

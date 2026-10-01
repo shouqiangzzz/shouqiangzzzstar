@@ -87,3 +87,23 @@ export interface OrderItem {
   receiverPhone: string;
   status: 'paid' | 'shipping' | 'completed';
 }
+
+export interface StudyInsight {
+  id: string;
+  title: string;
+  subject: string; // '计算机底层' | '前端与架构' | '算法思想' | '学习方法论' | '工程实践'
+  date: string;
+  author?: string;
+  authorAvatar?: string;
+  difficulty?: '入门探索' | '进阶实战' | '底层硬核';
+  takeaway: string; // 核心顿悟
+  content: string;
+  mediaType: MediaType;
+  coverImage?: string;
+  images?: string[];
+  videoUrl?: string;
+  videoDuration?: string;
+  tags: string[];
+  likesCount: number;
+  comments: Comment[];
+}

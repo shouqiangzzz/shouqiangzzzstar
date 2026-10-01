@@ -1,4 +1,4 @@
-import { LifePost, ProductItem, StoryItem } from '../types';
+import { LifePost, ProductItem, StoryItem, StudyInsight } from '../types';
 
 export const INITIAL_POSTS: LifePost[] = [
   {
@@ -490,3 +490,153 @@ export const INITIAL_STORIES: StoryItem[] = [
     comments: []
   }
 ];
+
+export const INITIAL_INSIGHTS: StudyInsight[] = [
+  {
+    id: 'insight-1',
+    title: '深入理解虚拟内存机制：为什么说现代操作系统的一切优雅皆源于“地址欺骗”？',
+    subject: '计算机底层',
+    difficulty: '底层硬核',
+    date: '2026-09-28',
+    author: 'Shouqiang',
+    authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
+    takeaway: '虚拟内存本质上是用“空间换时间、用间接层换安全”的哲学典范。当你看懂了多级页表与TLB，就真正看穿了进程隔离的物理本质。',
+    content: `
+### 1. 为什么我们需要虚拟内存？
+刚接触编程时，很多人以为指针存储的地址就是主板内存条上的物理针脚位置。但如果真是这样，两个进程同时写入同一地址就会造成严重的内存污染和系统崩溃。
+
+虚拟内存（Virtual Memory）通过软硬件协作，为每一个进程提供了独享整个48位/64位巨大连续地址空间的幻觉。
+
+### 2. 核心架构认知要点
+- **页表与多级分页**：为了解决扁平单级页表占用几百兆物理内存的问题，现代x86-64采用4级或5级页表结构。未使用的虚拟内存区域甚至不需要分配中间页表，极大地节省了空间。
+- **TLB（快表）的硬件加速**：内存访问本身就需要先查页表才能拿到物理地址，这本应让每次内存读写时间翻倍。但TLB命中率通常高于98%，让虚拟地址转换近乎零开销。
+- **缺页异常（Page Fault）与延迟加载（mmap）**：可执行文件在启动时并不会把所有字节装入内存，而是只映射虚拟地址。只有当CPU第一次访问对应页面触发缺页中断时，内核才会从磁盘将页面换入物理内存。
+
+### 3. 学习反思
+不要害怕汇编与硬件规范。拿起《CSAPP》第9章，对照Linux内核源码写一遍简易的物理页分配模拟器，所有的模糊感都会消散。
+    `,
+    mediaType: 'mixed',
+    coverImage: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80'
+    ],
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    videoDuration: '0:15',
+    tags: ['CSAPP', '虚拟内存', '操作系统内核', '底层原理'],
+    likesCount: 176,
+    comments: [
+      {
+        id: 'ic-1',
+        author: 'Linux爱好者',
+        avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=120&q=80',
+        content: '讲得太通透了！特别是“用间接层换安全”这一句点醒了我，很多软件架构设计思想其实就是操作系统的复现。',
+        date: '2026-09-29',
+        likes: 12
+      }
+    ]
+  },
+  {
+    id: 'insight-2',
+    title: '费曼学习法践行第1000天：如何向非技术朋友讲透分布式共识算法（Raft协议）？',
+    subject: '学习方法论',
+    difficulty: '进阶实战',
+    date: '2026-09-22',
+    author: 'Shouqiang',
+    authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
+    takeaway: '如果你无法用厨房做饭或者班级选班长的比喻把一个概念讲给8岁小孩听懂，说明你自己的理解还停留在死记硬背的表层。',
+    content: `
+### 1. 概念的重构：把分布式节点当做一群朋友
+Paxos协议以晦涩难懂著称，而Raft的设计哲学就是：**为了让人类更容易理解**。
+
+我们可以把分布式共识想象成一个3个人的徒步小队在荒野决策：
+- **Leader（队长）**：负责接收大家的意见并做决策。
+- **Follower（队员）**：听从队长指令，按部就班执行。
+- **Candidate（竞选者）**：如果队员很久没听到队长的哨声（心跳超时），就会举手自荐：“我来当队长，大家投票！”
+
+### 2. 保证日志一致性的双重承诺
+1. **多数派胜出（Quorum）**：3个人里必须有2票赞成，新指令才被提交（Commit）。即使1个人掉线，系统依然坚不可摧。
+2. **任期编号（Term）**：永远认准最新的任期，过期的旧队长重新连线后必须乖乖降级为队员。
+
+### 3. 我的费曼心法卡片
+每当读完一篇分布式论文或源码，我会在白纸上画出3个小人角色，录一段3分钟语音向朋友解释。这个过程会瞬间暴露我的知识盲区。
+    `,
+    mediaType: 'image',
+    coverImage: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=1200&q=80'
+    ],
+    tags: ['费曼技巧', 'Raft共识算法', '心智模型', '认知跃迁'],
+    likesCount: 204,
+    comments: [
+      {
+        id: 'ic-2',
+        author: '小鹿学长',
+        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
+        content: '“班级选班长”的比喻太绝了！原来分布式心跳和选举这么简单易懂。',
+        date: '2026-09-23',
+        likes: 9
+      }
+    ]
+  },
+  {
+    id: 'insight-3',
+    title: 'TypeScript类型体操从抗拒到真香：类型系统即命题逻辑的工程美学',
+    subject: '前端与架构',
+    difficulty: '进阶实战',
+    date: '2026-09-14',
+    author: 'Shouqiang',
+    authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
+    takeaway: '静态类型不是给代码加枷锁，而是在编译期为你架设一层万无一失的防坠安全网。善用条件类型和infer，能大幅减少运行时防御代码。',
+    content: `
+### 1. 认知的转变：类型是一等公民的图灵完备语言
+刚开始学TypeScript时，很多人把类型当做负担，甚至到处使用 \`any\`。
+
+但真正进阶后你会发现，TS类型系统本身就是一种无副作用的纯函数式编程语言：
+- 泛型是函数参数：\`type F<T> = ...\`
+- 条件类型是三元运算符：\`T extends U ? X : Y\`
+- \`infer\` 是模式匹配与解构赋值
+- 联合类型是集合论的并集
+
+### 2. 实战体会：类型驱动开发（TDD: Type-Driven Development）
+在写任何复杂业务逻辑或API客户端之前，先把核心数据结构和请求响应类型写得精确严密。你会惊奇地发现，当类型定义完美闭环时，实际业务代码只需顺着编辑器的智能推导自然流淌。
+    `,
+    mediaType: 'text',
+    coverImage: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=1200&q=80',
+    tags: ['TypeScript', '类型体操', '前端架构', '代码美学'],
+    likesCount: 145,
+    comments: []
+  },
+  {
+    id: 'insight-4',
+    title: '算法不刷死题的框架思维：双指针与动态规划的状态转移本质探究',
+    subject: '算法思想',
+    difficulty: '进阶实战',
+    date: '2026-08-25',
+    author: 'Shouqiang',
+    authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
+    takeaway: '动态规划不是玄学，它本质上就是“带备忘录的暴力搜索 + 寻找状态转移拓扑序”。分类归纳模式比盲目做500道题有用十倍。',
+    content: `
+### 1. 刷题的误区与破解之道
+很多同学刷LeetCode容易陷入“看题解觉得会了，自己写两眼一抹黑”的窘境。其根本原因是没有抽象出算法背后的数学模型与搜索剪枝逻辑。
+
+### 2. 动态规划的4步固定思考框架
+1. **确定状态（dp数组的物理意义）**：这一步最关键。例如 \`dp[i][j]\` 到底是代表前i个物品容量为j的最大价值，还是字符串s[0..i]与p[0..j]的匹配度？
+2. **推导状态转移方程**：最后一步的选择是什么？穷举所有可能性。
+3. **初始化与边界条件**：0号位置或者空字符串的基本状态。
+4. **确定计算遍历方向**：必须保证在计算当前状态时，所依赖的子状态已经被计算完毕。
+
+建立这套系统思考框架后，再遇到中等或困难题目，大脑就会自动进入结构化解题状态。
+    `,
+    mediaType: 'image',
+    coverImage: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80'
+    ],
+    tags: ['动态规划', '算法框架', 'LeetCode解题法', '数学思维'],
+    likesCount: 189,
+    comments: []
+  }
+];
+

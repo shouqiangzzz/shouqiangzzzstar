@@ -16,7 +16,14 @@ import {
   Star,
   CheckCircle,
   HelpCircle,
-  Github
+  Github,
+  GraduationCap,
+  Lightbulb,
+  Layers,
+  UserCheck,
+  Database,
+  ShieldCheck,
+  LogIn
 } from 'lucide-react';
 
 import { Navbar } from './components/Navbar';
@@ -28,14 +35,32 @@ import { ProductDetailModal } from './components/ProductDetailModal';
 import { StoryCard } from './components/StoryCard';
 import { StoryDetailModal } from './components/StoryDetailModal';
 import { ShareStoryModal } from './components/ShareStoryModal';
+import { StudyInsightCard } from './components/StudyInsightCard';
+import { StudyInsightDetailModal } from './components/StudyInsightDetailModal';
+import { ShareInsightModal } from './components/ShareInsightModal';
 import { PublishModal } from './components/PublishModal';
 import { CartDrawer } from './components/CartDrawer';
 import { PlantedGrassDrawer } from './components/PlantedGrassDrawer';
+import { AuthModal } from './components/AuthModal';
+import { UserProfileDrawer } from './components/UserProfileDrawer';
 
-import { INITIAL_POSTS, INITIAL_PRODUCTS, INITIAL_STORIES } from './data/initialData';
-import { LifePost, ProductItem, StoryItem, CartItem, OrderItem, Comment, ProductCategory, PostCategory } from './types';
+import { INITIAL_POSTS, INITIAL_PRODUCTS, INITIAL_STORIES, INITIAL_INSIGHTS } from './data/initialData';
+import { LifePost, ProductItem, StoryItem, StudyInsight, CartItem, OrderItem, Comment, ProductCategory, PostCategory } from './types';
+import { useAuth } from './context/AuthContext';
+import { db, doc, setDoc, testFirestoreConnection } from './lib/firebase';
 
 export default function App() {
+  const { currentUser, userProfile } = useAuth();
+
+  // Test Firestore Connection on boot (as required by Firestore skill)
+  useEffect(() => {
+    testFirestoreConnection().then((connected) => {
+      if (connected) {
+        console.log("Firebase Firestore connected successfully.");
+      }
+    });
+  }, []);
+
   // Persistence state
   const [posts, setPosts] = useState<LifePost[]>(() => {
     const saved = localStorage.getItem('sq_posts');
@@ -50,6 +75,11 @@ export default function App() {
   const [stories, setStories] = useState<StoryItem[]>(() => {
     const saved = localStorage.getItem('sq_stories');
     return saved ? JSON.parse(saved) : INITIAL_STORIES;
+  });
+
+  const [insights, setInsights] = useState<StudyInsight[]>(() => {
+    const saved = localStorage.getItem('sq_insights');
+    return saved ? JSON.parse(saved) : INITIAL_INSIGHTS;
   });
 
   const [plantedProductIds, setPlantedProductIds] = useState<string[]>(() => {
@@ -73,12 +103,17 @@ export default function App() {
   });
 
   // UI state
-  const [activeTab, setActiveTab] = useState<'all' | 'life' | 'products' | 'stories'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'life' | 'insights' | 'products' | 'stories'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   
   // Filter states
   const [selectedPostCategory, setSelectedPostCategory] = useState<string>('all');
   const [selectedPostMedia, setSelectedPostMedia] = useState<string>('all');
+
+  const [selectedInsightSubject, setSelectedInsightSubject] = useState<string>('all');
+  const [selectedInsightDifficulty, setSelectedInsightDifficulty] = useState<string>('all');
+  const [selectedInsightMedia, setSelectedInsightMedia] = useState<string>('all');
+
   const [selectedProductCategory, setSelectedProductCategory] = useState<string>('all');
   const [productSortBy, setProductSortBy] = useState<'popular' | 'price-asc' | 'price-desc'>('popular');
 
@@ -86,11 +121,18 @@ export default function App() {
   const [selectedPost, setSelectedPost] = useState<LifePost | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
   const [selectedStory, setSelectedStory] = useState<StoryItem | null>(null);
+  const [selectedInsight, setSelectedInsight] = useState<StudyInsight | null>(null);
 
   const [isShareStoryOpen, setIsShareStoryOpen] = useState(false);
+  const [isShareInsightOpen, setIsShareInsightOpen] = useState(false);
   const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isPlantedOpen, setIsPlantedOpen] = useState(false);
+
+  // Auth Modals
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('register');
+  const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false);
 
   // Sync to LocalStorage
   useEffect(() => {
@@ -104,6 +146,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('sq_stories', JSON.stringify(stories));
   }, [stories]);
+
+  useEffect(() => {
+    localStorage.setItem('sq_insights', JSON.stringify(insights));
+  }, [insights]);
 
   useEffect(() => {
     localStorage.setItem('sq_planted', JSON.stringify(plantedProductIds));
@@ -180,41 +226,89 @@ export default function App() {
     }
   };
 
+  const handleLikeInsight = (insightId: string) => {
+    setInsights((currentInsights) =>
+      currentInsights.map((insight) =>
+        insight.id === insightId ? { ...insight, likesCount: insight.likesCount + 1 } : insight
+      )
+    );
+    if (selectedInsight && selectedInsight.id === insightId) {
+      setSelectedInsight((prev) => (prev ? { ...prev, likesCount: prev.likesCount + 1 } : null));
+    }
+  };
+
   const handleAddPostComment = (postId: string, comment: Comment) => {
+    const finalComment = {
+      ...comment,
+      author: userProfile?.displayName || comment.author,
+      avatar: userProfile?.photoURL || comment.avatar
+    };
+
     setPosts((currentPosts) =>
       currentPosts.map((p) =>
-        p.id === postId ? { ...p, comments: [comment, ...p.comments] } : p
+        p.id === postId ? { ...p, comments: [finalComment, ...p.comments] } : p
       )
     );
     if (selectedPost && selectedPost.id === postId) {
       setSelectedPost((prev) =>
-        prev ? { ...prev, comments: [comment, ...prev.comments] } : null
+        prev ? { ...prev, comments: [finalComment, ...prev.comments] } : null
       );
     }
   };
 
   const handleAddProductComment = (productId: string, comment: Comment) => {
+    const finalComment = {
+      ...comment,
+      author: userProfile?.displayName || comment.author,
+      avatar: userProfile?.photoURL || comment.avatar
+    };
+
     setProducts((currentProds) =>
       currentProds.map((prod) =>
-        prod.id === productId ? { ...prod, comments: [comment, ...prod.comments] } : prod
+        prod.id === productId ? { ...prod, comments: [finalComment, ...prod.comments] } : prod
       )
     );
     if (selectedProduct && selectedProduct.id === productId) {
       setSelectedProduct((prev) =>
-        prev ? { ...prev, comments: [comment, ...prev.comments] } : null
+        prev ? { ...prev, comments: [finalComment, ...prev.comments] } : null
       );
     }
   };
 
   const handleAddStoryComment = (storyId: string, comment: Comment) => {
+    const finalComment = {
+      ...comment,
+      author: userProfile?.displayName || comment.author,
+      avatar: userProfile?.photoURL || comment.avatar
+    };
+
     setStories((currentStories) =>
       currentStories.map((s) =>
-        s.id === storyId ? { ...s, comments: [comment, ...s.comments] } : s
+        s.id === storyId ? { ...s, comments: [finalComment, ...s.comments] } : s
       )
     );
     if (selectedStory && selectedStory.id === storyId) {
       setSelectedStory((prev) =>
-        prev ? { ...prev, comments: [comment, ...prev.comments] } : null
+        prev ? { ...prev, comments: [finalComment, ...prev.comments] } : null
+      );
+    }
+  };
+
+  const handleAddInsightComment = (insightId: string, comment: Comment) => {
+    const finalComment = {
+      ...comment,
+      author: userProfile?.displayName || comment.author,
+      avatar: userProfile?.photoURL || comment.avatar
+    };
+
+    setInsights((currentInsights) =>
+      currentInsights.map((ins) =>
+        ins.id === insightId ? { ...ins, comments: [finalComment, ...ins.comments] } : ins
+      )
+    );
+    if (selectedInsight && selectedInsight.id === insightId) {
+      setSelectedInsight((prev) =>
+        prev ? { ...prev, comments: [finalComment, ...prev.comments] } : null
       );
     }
   };
@@ -256,24 +350,101 @@ export default function App() {
     setCart([]);
   };
 
-  const handleCheckoutSuccess = (order: OrderItem) => {
+  const handleCheckoutSuccess = async (order: OrderItem) => {
     setOrders((prev) => [order, ...prev]);
+
+    // Persist to Cloud Firestore if logged in
+    if (currentUser) {
+      try {
+        await setDoc(doc(db, 'orders', order.id), {
+          ...order,
+          userId: currentUser.uid,
+          createdAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.warn("Cloud order write note:", err);
+      }
+    }
   };
 
-  // Add items from modal
-  const handleAddNewPost = (newPost: LifePost) => {
+  // Add items from modals
+  const handleAddNewPost = async (newPost: LifePost) => {
     setPosts((prev) => [newPost, ...prev]);
     setActiveTab('life');
+
+    if (currentUser) {
+      try {
+        await setDoc(doc(db, 'posts', newPost.id), {
+          ...newPost,
+          authorId: currentUser.uid,
+          createdAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.warn("Cloud post write note:", err);
+      }
+    }
   };
 
-  const handleAddNewProduct = (newProduct: ProductItem) => {
+  const handleAddNewProduct = async (newProduct: ProductItem) => {
     setProducts((prev) => [newProduct, ...prev]);
     setActiveTab('products');
+
+    if (currentUser) {
+      try {
+        await setDoc(doc(db, 'products', newProduct.id), {
+          ...newProduct,
+          createdAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.warn("Cloud product write note:", err);
+      }
+    }
   };
 
-  const handleAddNewStory = (newStory: StoryItem) => {
-    setStories((prev) => [newStory, ...prev]);
+  const handleAddNewStory = async (newStory: StoryItem) => {
+    const finalStory = {
+      ...newStory,
+      author: userProfile?.displayName || newStory.author,
+      authorAvatar: userProfile?.photoURL || newStory.authorAvatar
+    };
+
+    setStories((prev) => [finalStory, ...prev]);
     setActiveTab('stories');
+
+    if (currentUser) {
+      try {
+        await setDoc(doc(db, 'stories', finalStory.id), {
+          ...finalStory,
+          authorId: currentUser.uid,
+          createdAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.warn("Cloud story write note:", err);
+      }
+    }
+  };
+
+  const handleAddNewInsight = async (newInsight: StudyInsight) => {
+    const finalInsight = {
+      ...newInsight,
+      author: userProfile?.displayName || newInsight.author,
+      authorAvatar: userProfile?.photoURL || newInsight.authorAvatar
+    };
+
+    setInsights((prev) => [finalInsight, ...prev]);
+    setActiveTab('insights');
+
+    if (currentUser) {
+      try {
+        await setDoc(doc(db, 'insights', finalInsight.id), {
+          ...finalInsight,
+          authorId: currentUser.uid,
+          createdAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.warn("Cloud insight write note:", err);
+      }
+    }
   };
 
   // Filtered queries
@@ -297,6 +468,32 @@ export default function App() {
       return matchSearch && matchCat && matchMedia;
     });
   }, [posts, searchQuery, selectedPostCategory, selectedPostMedia]);
+
+  const filteredInsights = useMemo(() => {
+    return insights.filter((ins) => {
+      const matchSearch =
+        !searchQuery ||
+        ins.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ins.takeaway.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ins.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ins.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ins.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      const matchSubject =
+        selectedInsightSubject === 'all' || ins.subject === selectedInsightSubject;
+
+      const matchDiff =
+        selectedInsightDifficulty === 'all' || ins.difficulty === selectedInsightDifficulty;
+
+      const matchMedia =
+        selectedInsightMedia === 'all' ||
+        (selectedInsightMedia === 'video' && (ins.mediaType === 'video' || !!ins.videoUrl)) ||
+        (selectedInsightMedia === 'image' && (ins.mediaType === 'image' || (ins.images && ins.images.length > 0))) ||
+        (selectedInsightMedia === 'text' && ins.mediaType === 'text');
+
+      return matchSearch && matchSubject && matchDiff && matchMedia;
+    });
+  }, [insights, searchQuery, selectedInsightSubject, selectedInsightDifficulty, selectedInsightMedia]);
 
   const filteredProducts = useMemo(() => {
     const list = products.filter((prod) => {
@@ -353,9 +550,38 @@ export default function App() {
         cartCount={cart.reduce((a, b) => a + b.quantity, 0)}
         onOpenPublish={() => setIsPublishOpen(true)}
         onOpenShareStory={() => setIsShareStoryOpen(true)}
+        onOpenShareInsight={() => setIsShareInsightOpen(true)}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenPlanted={() => setIsPlantedOpen(true)}
+        onOpenAuth={(mode = 'register') => {
+          setAuthModalMode(mode);
+          setIsAuthModalOpen(true);
+        }}
+        onOpenProfile={() => setIsProfileDrawerOpen(true)}
       />
+
+      {/* Database & User Status Bar Banner (if not logged in) */}
+      {!currentUser && (
+        <div className="bg-gradient-to-r from-stone-900 via-indigo-950 to-stone-900 text-white py-2 px-4 border-b border-indigo-900/50">
+          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <Database className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span>
+                <strong>云端数据库已就绪：</strong>支持注册账号并保存专属种草清单、订单记录与学习心得
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setAuthModalMode('register');
+                setIsAuthModalOpen(true);
+              }}
+              className="px-3 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold text-[11px] shadow-xs transition-colors"
+            >
+              立即注册个人账号 →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -374,7 +600,7 @@ export default function App() {
         {searchQuery && (
           <div className="mb-6 p-4 rounded-xl bg-amber-50/80 border border-amber-200 flex items-center justify-between">
             <div className="text-xs sm:text-sm text-amber-900">
-              正在搜索关键词：“<span className="font-bold">{searchQuery}</span>”，找到 {filteredPosts.length} 篇经历、{filteredProducts.length} 件好物、{filteredStories.length} 则故事。
+              正在搜索关键词：“<span className="font-bold">{searchQuery}</span>”，找到 {filteredPosts.length} 篇经历、{filteredInsights.length} 则学习心得、{filteredProducts.length} 件好物、{filteredStories.length} 则故事。
             </div>
             <button
               onClick={() => setSearchQuery('')}
@@ -425,7 +651,52 @@ export default function App() {
               </div>
             </section>
 
-            {/* Section 2: Curated Products Market Showcase */}
+            {/* Section 2: Study Insights Showcase */}
+            <section className="pt-4 border-t border-stone-200">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full mb-1">
+                    <GraduationCap className="w-3.5 h-3.5" /> 深度认知 · 学习心得
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold font-serif text-stone-900 flex items-center gap-2">
+                    <Lightbulb className="w-6 h-6 text-amber-500" />
+                    <span>学习心得与感悟</span>
+                  </h2>
+                  <p className="text-xs sm:text-sm text-stone-500 mt-1">
+                    计算机底层机制、费曼学习法、现代架构与算法思维复盘，支持超清视频与图文讲解
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setIsShareInsightOpen(true)}
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-semibold hover:bg-indigo-100 transition-colors"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>分享我的心得</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('insights')}
+                    className="text-xs sm:text-sm font-semibold text-indigo-700 hover:text-indigo-900 flex items-center gap-1 group"
+                  >
+                    <span>研读全部心得 ({insights.length})</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredInsights.slice(0, 3).map((insight) => (
+                  <StudyInsightCard
+                    key={insight.id}
+                    insight={insight}
+                    onLike={handleLikeInsight}
+                    onOpenDetail={(ins) => setSelectedInsight(ins)}
+                  />
+                ))}
+              </div>
+            </section>
+
+            {/* Section 3: Curated Products Market Showcase */}
             <section className="pt-4 border-t border-stone-200">
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -463,7 +734,7 @@ export default function App() {
               </div>
             </section>
 
-            {/* Section 3: Community Stories Wall Showcase */}
+            {/* Section 4: Community Stories Wall Showcase */}
             <section className="pt-4 border-t border-stone-200">
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -515,7 +786,7 @@ export default function App() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold font-serif text-stone-900">
-                  生活日常 · 深度学习与经历
+                  生活日常 · 学习历程与探索
                 </h1>
                 <p className="text-xs sm:text-sm text-stone-500 mt-1">
                   支持高清视频、摄影图集、深度手札与旅行路书多格式记录
@@ -606,7 +877,117 @@ export default function App() {
         )}
 
         {/* ============================================================== */}
-        {/* TAB 3: CURATED PRODUCTS MARKET */}
+        {/* TAB 3: STUDY INSIGHTS */}
+        {/* ============================================================== */}
+        {activeTab === 'insights' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold">
+                    深度认知 · 学习心得
+                  </span>
+                  <span className="text-xs text-stone-400">支持超清视频、架构图解与长文</span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-bold font-serif text-stone-900">
+                  学习心得与思考感悟
+                </h1>
+                <p className="text-xs sm:text-sm text-stone-500 mt-1">
+                  分享探索计算机底层体系、分布式共识、架构设计哲学与费曼自学法的心得顿悟
+                </p>
+              </div>
+
+              <button
+                onClick={() => setIsShareInsightOpen(true)}
+                className="self-start sm:self-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>分享我的学习心得</span>
+              </button>
+            </div>
+
+            {/* Filter Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-white border border-stone-200 shadow-2xs">
+              {/* Subject Filter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto text-xs">
+                <span className="text-stone-400 text-[11px] mr-1">学科领域:</span>
+                {[
+                  { id: 'all', label: '全部领域' },
+                  { id: '计算机底层', label: '⚡ 计算机底层' },
+                  { id: '前端与架构', label: '🌐 前端与架构' },
+                  { id: '算法思想', label: '🧩 算法思想' },
+                  { id: '学习方法论', label: '🎯 学习方法论' },
+                  { id: '工程实践', label: '🛠️ 工程实践' }
+                ].map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => setSelectedInsightSubject(s.id)}
+                    className={`px-3 py-1.5 rounded-lg transition-colors font-medium shrink-0 ${
+                      selectedInsightSubject === s.id
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'text-stone-600 hover:bg-stone-100'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Difficulty and Media filters */}
+              <div className="flex items-center gap-2 text-xs">
+                <select
+                  value={selectedInsightDifficulty}
+                  onChange={(e) => setSelectedInsightDifficulty(e.target.value)}
+                  className="bg-stone-50 border border-stone-200 text-stone-700 text-xs rounded-lg px-2.5 py-1 outline-hidden"
+                >
+                  <option value="all">所有难度</option>
+                  <option value="入门探索">🌱 入门探索</option>
+                  <option value="进阶实战">🔥 进阶实战</option>
+                  <option value="底层硬核">⚡ 底层硬核</option>
+                </select>
+
+                <select
+                  value={selectedInsightMedia}
+                  onChange={(e) => setSelectedInsightMedia(e.target.value)}
+                  className="bg-stone-50 border border-stone-200 text-stone-700 text-xs rounded-lg px-2.5 py-1 outline-hidden"
+                >
+                  <option value="all">所有格式</option>
+                  <option value="video">🎬 包含视频</option>
+                  <option value="image">🖼️ 图解图集</option>
+                  <option value="text">📝 纯文字手札</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Insights Grid */}
+            {filteredInsights.length === 0 ? (
+              <div className="py-20 text-center space-y-3 bg-white rounded-2xl border border-stone-200">
+                <GraduationCap className="w-10 h-10 text-stone-300 mx-auto" />
+                <p className="text-stone-600 text-sm font-medium">暂无符合条件的学习心得</p>
+                <button
+                  onClick={() => setIsShareInsightOpen(true)}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg"
+                >
+                  成为第一位分享心得的人
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredInsights.map((insight) => (
+                  <StudyInsightCard
+                    key={insight.id}
+                    insight={insight}
+                    onLike={handleLikeInsight}
+                    onOpenDetail={(ins) => setSelectedInsight(ins)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB 4: CURATED PRODUCTS MARKET */}
         {/* ============================================================== */}
         {activeTab === 'products' && (
           <div className="space-y-6">
@@ -704,7 +1085,7 @@ export default function App() {
         )}
 
         {/* ============================================================== */}
-        {/* TAB 4: STORIES WALL */}
+        {/* TAB 5: STORIES WALL */}
         {/* ============================================================== */}
         {activeTab === 'stories' && (
           <div className="space-y-6">
@@ -781,29 +1162,34 @@ export default function App() {
             </div>
 
             <div className="space-y-2">
-              <h4 className="text-white font-semibold text-xs tracking-wider">好物品类快速通道</h4>
+              <h4 className="text-white font-semibold text-xs tracking-wider">专栏导航</h4>
               <ul className="space-y-1 text-stone-400">
-                <li><button onClick={() => { setActiveTab('products'); setSelectedProductCategory('electronics'); }} className="hover:text-amber-400">4K便携屏与客制化外设</button></li>
-                <li><button onClick={() => { setActiveTab('products'); setSelectedProductCategory('books'); }} className="hover:text-amber-400">《CSAPP》与深度工作读物</button></li>
-                <li><button onClick={() => { setActiveTab('products'); setSelectedProductCategory('snacks'); }} className="hover:text-amber-400">云南冷萃冻干与草原黄牛肉</button></li>
-                <li><button onClick={() => { setActiveTab('products'); setSelectedProductCategory('travel'); }} className="hover:text-amber-400">川西318与云南旅居路书</button></li>
+                <li><button onClick={() => setActiveTab('life')} className="hover:text-emerald-400">生活日常与自驾探索</button></li>
+                <li><button onClick={() => setActiveTab('insights')} className="hover:text-indigo-400">学习心得与思维复盘</button></li>
+                <li><button onClick={() => setActiveTab('products')} className="hover:text-amber-400">自用好物集市与路书</button></li>
+                <li><button onClick={() => setActiveTab('stories')} className="hover:text-rose-400">社区故事分享墙</button></li>
               </ul>
             </div>
 
             <div className="space-y-2">
-              <h4 className="text-white font-semibold text-xs tracking-wider">互动与交流社区</h4>
+              <h4 className="text-white font-semibold text-xs tracking-wider">用户与创作中心</h4>
               <ul className="space-y-1 text-stone-400">
-                <li><button onClick={() => setIsShareStoryOpen(true)} className="hover:text-rose-400">投递/分享你的故事</button></li>
-                <li><button onClick={() => setIsPlantedOpen(true)} className="hover:text-rose-400">查看我的种草清单 ({plantedProductIds.length})</button></li>
-                <li><button onClick={() => setIsPublishOpen(true)} className="hover:text-amber-400">创作者发布工作室</button></li>
-                <li><button onClick={() => setIsCartOpen(true)} className="hover:text-amber-400">我的购物车与订单 ({orders.length})</button></li>
+                {currentUser ? (
+                  <li><button onClick={() => setIsProfileDrawerOpen(true)} className="hover:text-amber-400 text-amber-300">👤 我的用户中心 ({userProfile?.displayName})</button></li>
+                ) : (
+                  <li><button onClick={() => { setAuthModalMode('register'); setIsAuthModalOpen(true); }} className="hover:text-amber-400 text-amber-300">✨ 注册专属个人账号</button></li>
+                )}
+                <li><button onClick={() => setIsShareInsightOpen(true)} className="hover:text-indigo-400">+ 发布学习心得</button></li>
+                <li><button onClick={() => setIsShareStoryOpen(true)} className="hover:text-rose-400">+ 分享人生故事</button></li>
+                <li><button onClick={() => setIsPlantedOpen(true)} className="hover:text-rose-400">我的种草清单 ({plantedProductIds.length})</button></li>
+                <li><button onClick={() => setIsCartOpen(true)} className="hover:text-amber-400">购物车与订单 ({orders.length})</button></li>
               </ul>
             </div>
           </div>
 
           <div className="pt-6 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-stone-500">
             <span>© 2026 Shouqiang (shouqiangzzz). All rights reserved. Licensed under MIT.</span>
-            <span>Made with Care for Creators, Readers & Explorers ✨</span>
+            <span>Cloud Database Active · Made with Care for Explorers ✨</span>
           </div>
         </div>
       </footer>
@@ -816,6 +1202,13 @@ export default function App() {
         onToggleBookmark={handleToggleBookmark}
         onLike={handleLikePost}
         onAddComment={handleAddPostComment}
+      />
+
+      <StudyInsightDetailModal
+        insight={selectedInsight}
+        onClose={() => setSelectedInsight(null)}
+        onLike={handleLikeInsight}
+        onAddComment={handleAddInsightComment}
       />
 
       <ProductDetailModal
@@ -835,6 +1228,12 @@ export default function App() {
         onAddComment={handleAddStoryComment}
       />
 
+      <ShareInsightModal
+        isOpen={isShareInsightOpen}
+        onClose={() => setIsShareInsightOpen(false)}
+        onSubmit={handleAddNewInsight}
+      />
+
       <ShareStoryModal
         isOpen={isShareStoryOpen}
         onClose={() => setIsShareStoryOpen(false)}
@@ -846,6 +1245,7 @@ export default function App() {
         onClose={() => setIsPublishOpen(false)}
         onAddPost={handleAddNewPost}
         onAddProduct={handleAddNewProduct}
+        onAddInsight={handleAddNewInsight}
       />
 
       <CartDrawer
@@ -865,6 +1265,21 @@ export default function App() {
         onTogglePlant={handleTogglePlant}
         onAddToCart={handleAddToCart}
         onOpenDetail={(prod) => setSelectedProduct(prod)}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        defaultMode={authModalMode}
+      />
+
+      <UserProfileDrawer
+        isOpen={isProfileDrawerOpen}
+        onClose={() => setIsProfileDrawerOpen(false)}
+        plantedCount={plantedProductIds.length}
+        ordersCount={orders.length}
+        onOpenPlanted={() => setIsPlantedOpen(true)}
+        onOpenCart={() => setIsCartOpen(true)}
       />
     </div>
   );
