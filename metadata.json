@@ -1,0 +1,8 @@
+{
+  "name": "ShouqiangStar - 个人生活经历、精选好物与故事社区",
+  "description": "展示生活学习与经历，精选电子产品、书籍、零食与旅游攻略，支持视频图文多模态分享、互动留言与好物种草。",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
