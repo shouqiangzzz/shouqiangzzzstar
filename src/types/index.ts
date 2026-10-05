@@ -67,6 +67,7 @@ export interface StoryItem {
   content: string;
   coverImage?: string;
   videoUrl?: string;
+  videoDuration?: string;
   tags: string[];
   likesCount: number;
   comments: Comment[];

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import { VideoUrlInput } from './VideoUrlInput';
+import { useVideoAttachment } from '../hooks/useVideoAttachment';
 import { 
   X, 
   Sparkles, 
   BookOpen, 
   ShoppingBag, 
-  Video, 
   Image as ImageIcon, 
   FileText, 
   Plus,
@@ -16,9 +17,9 @@ import { LifePost, ProductItem, StudyInsight, MediaType, PostCategory, ProductCa
 interface PublishModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddPost: (post: LifePost) => void;
-  onAddProduct: (product: ProductItem) => void;
-  onAddInsight?: (insight: StudyInsight) => void;
+  onAddPost: (post: LifePost) => void | Promise<void>;
+  onAddProduct: (product: ProductItem) => void | Promise<void>;
+  onAddInsight?: (insight: StudyInsight) => void | Promise<void>;
 }
 
 export const PublishModal: React.FC<PublishModalProps> = ({
@@ -38,7 +39,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
   const [postContent, setPostContent] = useState('');
   const [postMediaType, setPostMediaType] = useState<MediaType>('mixed');
   const [postCoverImage, setPostCoverImage] = useState('');
-  const [postVideoUrl, setPostVideoUrl] = useState('');
+  const postVideo = useVideoAttachment();
   const [postTags, setPostTags] = useState('');
 
   // Insight form state
@@ -49,7 +50,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
   const [insightContent, setInsightContent] = useState('');
   const [insightMediaType, setInsightMediaType] = useState<MediaType>('mixed');
   const [insightCoverImage, setInsightCoverImage] = useState('');
-  const [insightVideoUrl, setInsightVideoUrl] = useState('');
+  const insightVideo = useVideoAttachment();
   const [insightTags, setInsightTags] = useState('');
 
   // Product form state
@@ -62,69 +63,105 @@ export const PublishModal: React.FC<PublishModalProps> = ({
   const [prodDescription, setProdDescription] = useState('');
   const [prodImage, setProdImage] = useState('');
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
   if (!isOpen) return null;
 
-  const handlePostSubmit = (e: React.FormEvent) => {
+  const handlePostSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!postTitle.trim() || !postContent.trim()) return;
 
-    const tags = postTags.split(/[,，、 ]+/).map(t => t.trim()).filter(Boolean);
-    const cover = postCoverImage.trim() || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80';
+    if (isSubmitting) return;
+    setSubmitError('');
+    setIsSubmitting(true);
+    try {
+      const video = postVideo.requireVideo();
+      if (postMediaType === 'video' && !video) throw new Error('选择视频类型时，请先填写视频直链并完成预览验证。');
+      const tags = postTags.split(/[,，、 ]+/).map(t => t.trim()).filter(Boolean);
+      const cover = postCoverImage.trim() || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80';
 
-    const newPost: LifePost = {
-      id: `post-${Date.now()}`,
-      title: postTitle.trim(),
-      category: postCategory,
-      date: new Date().toISOString().split('T')[0],
-      location: postLocation.trim() || undefined,
-      summary: postSummary.trim() || postContent.slice(0, 70) + '...',
-      content: postContent.trim(),
-      mediaType: postMediaType,
-      coverImage: cover,
-      images: [cover],
-      videoUrl: postVideoUrl.trim() || undefined,
-      videoDuration: postVideoUrl.trim() ? '0:30' : undefined,
-      tags: tags.length > 0 ? tags : ['生活记录'],
-      likesCount: 1,
-      bookmarksCount: 0,
-      comments: []
-    };
+      const newPost: LifePost = {
+        id: `post-${Date.now()}`,
+        title: postTitle.trim(),
+        category: postCategory,
+        date: new Date().toISOString().split('T')[0],
+        location: postLocation.trim() || undefined,
+        summary: postSummary.trim() || postContent.slice(0, 70) + '...',
+        content: postContent.trim(),
+        mediaType: video ? (postMediaType === 'video' ? 'video' : 'mixed') : (postMediaType === 'text' ? 'text' : 'image'),
+        coverImage: cover,
+        images: [cover],
+        videoUrl: video?.url,
+        videoDuration: video?.duration,
+        tags: tags.length > 0 ? tags : ['生活记录'],
+        likesCount: 1,
+        bookmarksCount: 0,
+        comments: []
+      };
 
-    onAddPost(newPost);
-    onClose();
+      await onAddPost(newPost);
+      setPostTitle('');
+      setPostSummary('');
+      setPostContent('');
+      setPostCoverImage('');
+      postVideo.setVideoUrl('');
+      setPostTags('');
+      onClose();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : '发布失败，请重试。');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleInsightSubmit = (e: React.FormEvent) => {
+  const handleInsightSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!insightTitle.trim() || !insightContent.trim() || !insightTakeaway.trim()) return;
 
-    const tags = insightTags.split(/[,，、 ]+/).map(t => t.trim()).filter(Boolean);
-    const cover = insightCoverImage.trim() || 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80';
+    if (isSubmitting) return;
+    setSubmitError('');
+    setIsSubmitting(true);
+    try {
+      const video = insightVideo.requireVideo();
+      if (insightMediaType === 'video' && !video) throw new Error('选择视频类型时，请先填写视频直链并完成预览验证。');
+      const tags = insightTags.split(/[,，、 ]+/).map(t => t.trim()).filter(Boolean);
+      const cover = insightCoverImage.trim() || 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80';
 
-    const newInsight: StudyInsight = {
-      id: `insight-${Date.now()}`,
-      title: insightTitle.trim(),
-      subject: insightSubject,
-      difficulty: insightDifficulty,
-      date: new Date().toISOString().split('T')[0],
-      author: 'Shouqiang',
-      authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
-      takeaway: insightTakeaway.trim(),
-      content: insightContent.trim(),
-      mediaType: insightMediaType,
-      coverImage: cover,
-      images: [cover],
-      videoUrl: insightVideoUrl.trim() || undefined,
-      videoDuration: insightVideoUrl.trim() ? '0:20' : undefined,
-      tags: tags.length > 0 ? tags : ['学习心得', insightSubject],
-      likesCount: 1,
-      comments: []
-    };
+      const newInsight: StudyInsight = {
+        id: `insight-${Date.now()}`,
+        title: insightTitle.trim(),
+        subject: insightSubject,
+        difficulty: insightDifficulty,
+        date: new Date().toISOString().split('T')[0],
+        author: 'Shouqiang',
+        authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
+        takeaway: insightTakeaway.trim(),
+        content: insightContent.trim(),
+        mediaType: video ? (insightMediaType === 'video' ? 'video' : 'mixed') : (insightMediaType === 'text' ? 'text' : 'image'),
+        coverImage: cover,
+        images: [cover],
+        videoUrl: video?.url,
+        videoDuration: video?.duration,
+        tags: tags.length > 0 ? tags : ['学习心得', insightSubject],
+        likesCount: 1,
+        comments: []
+      };
 
-    if (onAddInsight) {
-      onAddInsight(newInsight);
+      if (!onAddInsight) throw new Error('暂时无法发布学习心得，请重试。');
+      await onAddInsight(newInsight);
+      setInsightTitle('');
+      setInsightTakeaway('');
+      setInsightContent('');
+      setInsightCoverImage('');
+      insightVideo.setVideoUrl('');
+      setInsightTags('');
+      onClose();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : '发布失败，请重试。');
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   };
 
   const handleProductSubmit = (e: React.FormEvent) => {
@@ -178,6 +215,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
           </div>
           <button
             onClick={onClose}
+                disabled={isSubmitting}
             className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded-full"
           >
             <X className="w-5 h-5" />
@@ -187,7 +225,8 @@ export const PublishModal: React.FC<PublishModalProps> = ({
         {/* Tab switch */}
         <div className="flex border-b border-stone-200 px-6 pt-2 bg-stone-50/50 overflow-x-auto">
           <button
-            onClick={() => setActiveType('post')}
+            onClick={() => { setActiveType('post'); setSubmitError(''); }}
+            disabled={isSubmitting}
             className={`flex items-center gap-2 py-2.5 px-3.5 text-xs sm:text-sm font-semibold border-b-2 shrink-0 transition-all ${
               activeType === 'post'
                 ? 'border-amber-600 text-amber-900 bg-white rounded-t-lg'
@@ -199,7 +238,8 @@ export const PublishModal: React.FC<PublishModalProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveType('insight')}
+            onClick={() => { setActiveType('insight'); setSubmitError(''); }}
+            disabled={isSubmitting}
             className={`flex items-center gap-2 py-2.5 px-3.5 text-xs sm:text-sm font-semibold border-b-2 shrink-0 transition-all ${
               activeType === 'insight'
                 ? 'border-indigo-600 text-indigo-900 bg-white rounded-t-lg'
@@ -211,7 +251,8 @@ export const PublishModal: React.FC<PublishModalProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveType('product')}
+            onClick={() => { setActiveType('product'); setSubmitError(''); }}
+            disabled={isSubmitting}
             className={`flex items-center gap-2 py-2.5 px-3.5 text-xs sm:text-sm font-semibold border-b-2 shrink-0 transition-all ${
               activeType === 'product'
                 ? 'border-amber-600 text-amber-900 bg-white rounded-t-lg'
@@ -226,6 +267,8 @@ export const PublishModal: React.FC<PublishModalProps> = ({
         {/* Form Body */}
         {activeType === 'post' && (
           <form onSubmit={handlePostSubmit} className="overflow-y-auto p-6 space-y-4">
+            {submitError && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl p-3">{submitError}</p>}
+            <fieldset disabled={isSubmitting} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-stone-700 mb-1">
                 文章 / 经历标题 <span className="text-amber-600">*</span>
@@ -321,19 +364,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
-                  <Video className="w-3.5 h-3.5 text-stone-400" />
-                  <span>视频文件 URL (支持mp4)</span>
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://...mp4"
-                  value={postVideoUrl}
-                  onChange={(e) => setPostVideoUrl(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl outline-hidden focus:border-amber-500"
-                />
-              </div>
+              <VideoUrlInput {...postVideo.inputProps} />
             </div>
 
             <div>
@@ -351,23 +382,28 @@ export const PublishModal: React.FC<PublishModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
+                disabled={isSubmitting}
                 className="px-4 py-2 text-xs font-medium text-stone-600 hover:bg-stone-100 rounded-xl"
               >
                 取消
               </button>
               <button
                 type="submit"
+                disabled={isSubmitting || Boolean(postVideo.videoUrl.trim() && !postVideo.videoInfo)}
                 className="px-5 py-2 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-xs transition-colors"
               >
-                发布到生活与经历
+                {isSubmitting ? '正在发布…' : '发布到生活与经历'}
               </button>
             </div>
+            </fieldset>
           </form>
         )}
 
         {/* Insight Form */}
         {activeType === 'insight' && (
           <form onSubmit={handleInsightSubmit} className="overflow-y-auto p-6 space-y-4">
+            {submitError && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl p-3">{submitError}</p>}
+            <fieldset disabled={isSubmitting} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-stone-700 mb-1">
                 心得主题 / 命题 <span className="text-indigo-600">*</span>
@@ -456,19 +492,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
-                  <Video className="w-3.5 h-3.5 text-stone-400" />
-                  <span>视频文件 URL (支持mp4)</span>
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://...mp4"
-                  value={insightVideoUrl}
-                  onChange={(e) => setInsightVideoUrl(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl outline-hidden focus:border-indigo-500"
-                />
-              </div>
+              <VideoUrlInput {...insightVideo.inputProps} />
             </div>
 
             <div>
@@ -486,17 +510,20 @@ export const PublishModal: React.FC<PublishModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
+                disabled={isSubmitting}
                 className="px-4 py-2 text-xs font-medium text-stone-600 hover:bg-stone-100 rounded-xl"
               >
                 取消
               </button>
               <button
                 type="submit"
+                disabled={isSubmitting || Boolean(insightVideo.videoUrl.trim() && !insightVideo.videoInfo)}
                 className="px-5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-xs transition-colors"
               >
-                发布到学习心得
+                {isSubmitting ? '正在发布…' : '发布到学习心得'}
               </button>
             </div>
+            </fieldset>
           </form>
         )}
 
@@ -617,12 +644,14 @@ export const PublishModal: React.FC<PublishModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
+                disabled={isSubmitting}
                 className="px-4 py-2 text-xs font-medium text-stone-600 hover:bg-stone-100 rounded-xl"
               >
                 取消
               </button>
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="px-5 py-2 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-xs transition-colors"
               >
                 上架到好物集市

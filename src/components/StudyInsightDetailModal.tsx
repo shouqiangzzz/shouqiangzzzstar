@@ -8,11 +8,11 @@ import {
   Calendar,
   Clock,
   Sparkles,
-  Play,
   Lightbulb
 } from 'lucide-react';
 import { StudyInsight, Comment } from '../types';
 import { calculateReadingTime } from '../utils/readingTime';
+import { VideoPlayer } from './VideoPlayer';
 
 interface StudyInsightDetailModalProps {
   insight: StudyInsight | null;
@@ -145,23 +145,7 @@ export const StudyInsightDetailModal: React.FC<StudyInsightDetailModalProps> = (
 
           {/* Video Player Section */}
           {insight.videoUrl && (
-            <div className="rounded-xl overflow-hidden bg-black shadow-inner">
-              <div className="p-2 bg-stone-900 text-stone-300 text-xs flex items-center justify-between">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <Play className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
-                  配套视频演示与讲解
-                </span>
-                <span className="text-[11px] text-stone-400">{insight.videoDuration || '0:15'}</span>
-              </div>
-              <video 
-                controls 
-                poster={insight.coverImage}
-                src={insight.videoUrl} 
-                className="w-full max-h-[460px] aspect-video object-contain bg-black"
-              >
-                您的浏览器不支持视频播放。
-              </video>
-            </div>
+            <VideoPlayer src={insight.videoUrl} title="配套视频演示与讲解" />
           )}
 
           {/* Image Gallery */}

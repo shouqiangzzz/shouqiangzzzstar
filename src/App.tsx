@@ -47,7 +47,8 @@ import { UserProfileDrawer } from './components/UserProfileDrawer';
 import { INITIAL_POSTS, INITIAL_PRODUCTS, INITIAL_STORIES, INITIAL_INSIGHTS } from './data/initialData';
 import { LifePost, ProductItem, StoryItem, StudyInsight, CartItem, OrderItem, Comment, ProductCategory, PostCategory } from './types';
 import { useAuth } from './context/AuthContext';
-import { db, doc, setDoc, testFirestoreConnection } from './lib/firebase';
+import { db, doc, setDoc, collection, onSnapshot, testFirestoreConnection } from './lib/firebase';
+import { mergePublishedRows, normalizeLifePost, normalizeStory, normalizeStudyInsight, publishContent, publishedDate } from './lib/publishContent';
 
 export default function App() {
   const { currentUser, userProfile } = useAuth();
@@ -105,6 +106,7 @@ export default function App() {
   // UI state
   const [activeTab, setActiveTab] = useState<'all' | 'life' | 'insights' | 'products' | 'stories'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [cloudReadErrors, setCloudReadErrors] = useState<Record<string, string>>({});
   
   // Filter states
   const [selectedPostCategory, setSelectedPostCategory] = useState<string>('all');
@@ -133,6 +135,49 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('register');
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false);
+
+  // Public reads let every visitor see the original media published by other users.
+  useEffect(() => {
+    const subscribe = <T extends { id: string; date?: string }>(
+      name: 'posts' | 'stories' | 'insights',
+      label: string,
+      updateRows: React.Dispatch<React.SetStateAction<T[]>>,
+      updateSelected: React.Dispatch<React.SetStateAction<T | null>>,
+      normalize: (data: unknown, id: string) => T | null
+    ) => onSnapshot(collection(db, name), { includeMetadataChanges: true }, (snapshot) => {
+      const documents = snapshot.docs
+        // setDoc emits a local event before the server accepts the publish.
+        .filter((item) => !item.metadata.hasPendingWrites);
+      const rows = documents
+        .map((item) => normalize(item.data(), item.id))
+        .filter((item): item is T => item !== null)
+        .sort((a, b) => publishedDate(b).localeCompare(publishedDate(a)) || a.id.localeCompare(b.id));
+      const skipped = documents.length - rows.length;
+      updateRows((current) => mergePublishedRows(current, rows));
+      updateSelected((current) => current ? rows.find((row) => row.id === current.id) || current : null);
+      setCloudReadErrors((current) => {
+        if (skipped > 0) {
+          return { ...current, [name]: `${label}中有 ${skipped} 条内容数据不完整，暂未显示。` };
+        }
+        if (!(name in current)) return current;
+        const next = { ...current };
+        delete next[name];
+        return next;
+      });
+    }, (error) => {
+      console.warn(`Cloud ${name} read failed:`, error);
+      setCloudReadErrors((current) => ({ ...current, [name]: `${label}暂时无法同步，请检查网络或刷新后重试。` }));
+    });
+
+    const unsubscribePosts = subscribe('posts', '生活动态', setPosts, setSelectedPost, normalizeLifePost);
+    const unsubscribeStories = subscribe('stories', '故事', setStories, setSelectedStory, normalizeStory);
+    const unsubscribeInsights = subscribe('insights', '学习心得', setInsights, setSelectedInsight, normalizeStudyInsight);
+    return () => {
+      unsubscribePosts();
+      unsubscribeStories();
+      unsubscribeInsights();
+    };
+  }, []);
 
   // Sync to LocalStorage
   useEffect(() => {
@@ -369,20 +414,11 @@ export default function App() {
 
   // Add items from modals
   const handleAddNewPost = async (newPost: LifePost) => {
-    setPosts((prev) => [newPost, ...prev]);
+    const published = await publishContent(newPost, currentUser?.uid, (data) =>
+      setDoc(doc(db, 'posts', newPost.id), data)
+    );
+    setPosts((prev) => mergePublishedRows(prev, [published]));
     setActiveTab('life');
-
-    if (currentUser) {
-      try {
-        await setDoc(doc(db, 'posts', newPost.id), {
-          ...newPost,
-          authorId: currentUser.uid,
-          createdAt: new Date().toISOString()
-        });
-      } catch (err) {
-        console.warn("Cloud post write note:", err);
-      }
-    }
   };
 
   const handleAddNewProduct = async (newProduct: ProductItem) => {
@@ -408,20 +444,11 @@ export default function App() {
       authorAvatar: userProfile?.photoURL || newStory.authorAvatar
     };
 
-    setStories((prev) => [finalStory, ...prev]);
+    const published = await publishContent(finalStory, currentUser?.uid, (data) =>
+      setDoc(doc(db, 'stories', finalStory.id), data)
+    );
+    setStories((prev) => mergePublishedRows(prev, [published]));
     setActiveTab('stories');
-
-    if (currentUser) {
-      try {
-        await setDoc(doc(db, 'stories', finalStory.id), {
-          ...finalStory,
-          authorId: currentUser.uid,
-          createdAt: new Date().toISOString()
-        });
-      } catch (err) {
-        console.warn("Cloud story write note:", err);
-      }
-    }
   };
 
   const handleAddNewInsight = async (newInsight: StudyInsight) => {
@@ -431,20 +458,11 @@ export default function App() {
       authorAvatar: userProfile?.photoURL || newInsight.authorAvatar
     };
 
-    setInsights((prev) => [finalInsight, ...prev]);
+    const published = await publishContent(finalInsight, currentUser?.uid, (data) =>
+      setDoc(doc(db, 'insights', finalInsight.id), data)
+    );
+    setInsights((prev) => mergePublishedRows(prev, [published]));
     setActiveTab('insights');
-
-    if (currentUser) {
-      try {
-        await setDoc(doc(db, 'insights', finalInsight.id), {
-          ...finalInsight,
-          authorId: currentUser.uid,
-          createdAt: new Date().toISOString()
-        });
-      } catch (err) {
-        console.warn("Cloud insight write note:", err);
-      }
-    }
   };
 
   // Filtered queries
@@ -585,6 +603,11 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {Object.keys(cloudReadErrors).length > 0 && (
+          <div role="alert" className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {Object.values(cloudReadErrors).join(' ')}
+          </div>
+        )}
         {/* Hero Section */}
         {activeTab === 'all' && !searchQuery && (
           <HeroBanner

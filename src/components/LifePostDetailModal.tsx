@@ -8,11 +8,11 @@ import {
   Clock,
   Send, 
   Share2,
-  CheckCircle,
-  Play
+  CheckCircle
 } from 'lucide-react';
 import { LifePost, Comment } from '../types';
 import { calculateReadingTime } from '../utils/readingTime';
+import { VideoPlayer } from './VideoPlayer';
 
 interface LifePostDetailModalProps {
   post: LifePost | null;
@@ -134,23 +134,7 @@ export const LifePostDetailModal: React.FC<LifePostDetailModalProps> = ({
 
           {/* Media Player Section */}
           {post.videoUrl && (
-            <div className="rounded-xl overflow-hidden bg-black shadow-inner">
-              <div className="p-2 bg-stone-900 text-stone-300 text-xs flex items-center justify-between">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <Play className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                  现场超清视频记录
-                </span>
-                <span className="text-[11px] text-stone-400">{post.videoDuration || '0:15'}</span>
-              </div>
-              <video 
-                controls 
-                poster={post.coverImage}
-                src={post.videoUrl} 
-                className="w-full max-h-[460px] aspect-video object-contain bg-black"
-              >
-                您的浏览器不支持视频播放。
-              </video>
-            </div>
+            <VideoPlayer src={post.videoUrl} title="现场视频记录" />
           )}
 
           {/* Image Gallery */}

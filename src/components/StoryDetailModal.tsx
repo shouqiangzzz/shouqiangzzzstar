@@ -9,6 +9,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { StoryItem, Comment } from '../types';
+import { VideoPlayer } from './VideoPlayer';
 
 interface StoryDetailModalProps {
   story: StoryItem | null;
@@ -128,15 +129,7 @@ export const StoryDetailModal: React.FC<StoryDetailModalProps> = ({
 
           {/* Video if any */}
           {story.videoUrl && (
-            <div className="rounded-xl overflow-hidden bg-black shadow-inner">
-              <video 
-                controls 
-                src={story.videoUrl} 
-                className="w-full aspect-video object-contain"
-              >
-                您的浏览器不支持视频播放。
-              </video>
-            </div>
+            <VideoPlayer src={story.videoUrl} title="故事原视频" />
           )}
 
           {/* Content */}
