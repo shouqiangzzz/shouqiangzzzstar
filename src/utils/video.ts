@@ -6,6 +6,12 @@ export interface VideoInfo {
 
 export const normalizeVideoUrl = (value: string): string => value.trim();
 
+/** A legacy reference identifies a video; it is not a browser-playable URL. */
+export const getLegacyVideoId = (value: string): string | null => {
+  const match = /^sq_video:\/\/([A-Za-z0-9][A-Za-z0-9_-]{0,127})$/.exec(normalizeVideoUrl(value));
+  return match?.[1] ?? null;
+};
+
 /** Published videos must point to the uploaded file, never a local preview URL. */
 export const getVideoUrlError = (value: string): string | null => {
   const url = normalizeVideoUrl(value);
@@ -28,6 +34,9 @@ export const getVideoUrlError = (value: string): string | null => {
 /** Only the file picker can opt in to a temporary local preview. */
 export const getVideoSourceError = (value: string, localPreview = false): string | null => {
   const source = normalizeVideoUrl(value);
+  if (getLegacyVideoId(source)) {
+    return '使用旧版视频接口，当前站点缺少对应读取接口，不能从视频 ID 还原原文件，需要从原上传站点导出并重新上传。';
+  }
   if (localPreview && /^blob:/i.test(source) && !/[\s\\]/.test(source)) {
     try {
       if (new URL(source).protocol === 'blob:') return null;
