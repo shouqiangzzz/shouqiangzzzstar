@@ -13,6 +13,9 @@ import {
 import { LifePost, Comment } from '../types';
 import { calculateReadingTime } from '../utils/readingTime';
 import { VideoPlayer } from './VideoPlayer';
+import { LegacyVideoRecovery } from './LegacyVideoRecovery';
+import type { RecoverVideoHandler } from './LegacyVideoRecovery';
+import { getLegacyVideoId } from '../utils/video';
 
 interface LifePostDetailModalProps {
   post: LifePost | null;
@@ -21,6 +24,8 @@ interface LifePostDetailModalProps {
   onToggleBookmark: (id: string) => void;
   onLike: (id: string) => void;
   onAddComment: (postId: string, comment: Comment) => void;
+  onRecoverVideo?: RecoverVideoHandler;
+  onRequestLogin?: () => void;
 }
 
 export const LifePostDetailModal: React.FC<LifePostDetailModalProps> = ({
@@ -29,7 +34,9 @@ export const LifePostDetailModal: React.FC<LifePostDetailModalProps> = ({
   isBookmarked,
   onToggleBookmark,
   onLike,
-  onAddComment
+  onAddComment,
+  onRecoverVideo,
+  onRequestLogin,
 }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [commentText, setCommentText] = useState('');
@@ -134,7 +141,9 @@ export const LifePostDetailModal: React.FC<LifePostDetailModalProps> = ({
 
           {/* Media Player Section */}
           {post.videoUrl && (
-            <VideoPlayer src={post.videoUrl} title="现场视频记录" />
+            getLegacyVideoId(post.videoUrl) && onRecoverVideo ? (
+              <LegacyVideoRecovery key={`${post.id}:${post.videoUrl}`} authorId={post.authorId} onRecover={onRecoverVideo} onRequestLogin={onRequestLogin} />
+            ) : <VideoPlayer src={post.videoUrl} title="现场视频记录" />
           )}
 
           {/* Image Gallery */}

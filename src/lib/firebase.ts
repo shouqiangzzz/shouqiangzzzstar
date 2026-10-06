@@ -26,7 +26,9 @@ import firebaseConfig from '../../firebase-applet-config.json';
 import { getStorage } from 'firebase/storage';
 import { handleFirestoreError, OperationType } from './firestoreError';
 
-const app = initializeApp(firebaseConfig);
+const apiKey = import.meta.env.VITE_FIREBASE_API_KEY?.trim() || firebaseConfig.apiKey;
+export const hasFirebaseApiKey = Boolean(apiKey && !/^\*+$/.test(apiKey) && apiKey !== 'YOUR_FIREBASE_WEB_API_KEY');
+const app = initializeApp({ ...firebaseConfig, apiKey });
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); /* CRITICAL: The app will break without this line */
 export const auth = getAuth(app);
 export const storage = getStorage(app);

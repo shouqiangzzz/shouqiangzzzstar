@@ -10,19 +10,26 @@ import {
 } from 'lucide-react';
 import { StoryItem, Comment } from '../types';
 import { VideoPlayer } from './VideoPlayer';
+import { LegacyVideoRecovery } from './LegacyVideoRecovery';
+import type { RecoverVideoHandler } from './LegacyVideoRecovery';
+import { getLegacyVideoId } from '../utils/video';
 
 interface StoryDetailModalProps {
   story: StoryItem | null;
   onClose: () => void;
   onLike: (id: string) => void;
   onAddComment: (storyId: string, comment: Comment) => void;
+  onRecoverVideo?: RecoverVideoHandler;
+  onRequestLogin?: () => void;
 }
 
 export const StoryDetailModal: React.FC<StoryDetailModalProps> = ({
   story,
   onClose,
   onLike,
-  onAddComment
+  onAddComment,
+  onRecoverVideo,
+  onRequestLogin,
 }) => {
   const [commentText, setCommentText] = useState('');
   const [authorName, setAuthorName] = useState('');
@@ -129,7 +136,9 @@ export const StoryDetailModal: React.FC<StoryDetailModalProps> = ({
 
           {/* Video if any */}
           {story.videoUrl && (
-            <VideoPlayer src={story.videoUrl} title="故事原视频" />
+            getLegacyVideoId(story.videoUrl) && onRecoverVideo ? (
+              <LegacyVideoRecovery key={`${story.id}:${story.videoUrl}`} authorId={story.authorId} onRecover={onRecoverVideo} onRequestLogin={onRequestLogin} />
+            ) : <VideoPlayer src={story.videoUrl} title="故事原视频" />
           )}
 
           {/* Content */}

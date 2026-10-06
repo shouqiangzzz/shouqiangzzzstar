@@ -13,19 +13,26 @@ import {
 import { StudyInsight, Comment } from '../types';
 import { calculateReadingTime } from '../utils/readingTime';
 import { VideoPlayer } from './VideoPlayer';
+import { LegacyVideoRecovery } from './LegacyVideoRecovery';
+import type { RecoverVideoHandler } from './LegacyVideoRecovery';
+import { getLegacyVideoId } from '../utils/video';
 
 interface StudyInsightDetailModalProps {
   insight: StudyInsight | null;
   onClose: () => void;
   onLike: (id: string) => void;
   onAddComment: (insightId: string, comment: Comment) => void;
+  onRecoverVideo?: RecoverVideoHandler;
+  onRequestLogin?: () => void;
 }
 
 export const StudyInsightDetailModal: React.FC<StudyInsightDetailModalProps> = ({
   insight,
   onClose,
   onLike,
-  onAddComment
+  onAddComment,
+  onRecoverVideo,
+  onRequestLogin,
 }) => {
   const [commentText, setCommentText] = useState('');
   const [authorName, setAuthorName] = useState('');
@@ -145,7 +152,9 @@ export const StudyInsightDetailModal: React.FC<StudyInsightDetailModalProps> = (
 
           {/* Video Player Section */}
           {insight.videoUrl && (
-            <VideoPlayer src={insight.videoUrl} title="配套视频演示与讲解" />
+            getLegacyVideoId(insight.videoUrl) && onRecoverVideo ? (
+              <LegacyVideoRecovery key={`${insight.id}:${insight.videoUrl}`} authorId={insight.authorId} onRecover={onRecoverVideo} onRequestLogin={onRequestLogin} />
+            ) : <VideoPlayer src={insight.videoUrl} title="配套视频演示与讲解" />
           )}
 
           {/* Image Gallery */}

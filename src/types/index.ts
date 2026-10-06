@@ -14,6 +14,12 @@ export interface VideoMetadata {
   videoContentType?: string;
 }
 
+export interface AuthoredContent {
+  authorId?: string;
+  authorName?: string;
+  createdAt?: string;
+}
+
 export interface Comment {
   id: string;
   author: string;
@@ -23,7 +29,7 @@ export interface Comment {
   likes: number;
 }
 
-export interface LifePost extends VideoMetadata {
+export interface LifePost extends VideoMetadata, AuthoredContent {
   id: string;
   title: string;
   category: PostCategory;
@@ -63,7 +69,7 @@ export interface ProductItem {
   badge?: string;
 }
 
-export interface StoryItem extends VideoMetadata {
+export interface StoryItem extends VideoMetadata, AuthoredContent {
   id: string;
   title: string;
   author: string;
@@ -95,7 +101,7 @@ export interface OrderItem {
   status: 'paid' | 'shipping' | 'completed';
 }
 
-export interface StudyInsight extends VideoMetadata {
+export interface StudyInsight extends VideoMetadata, AuthoredContent {
   id: string;
   title: string;
   subject: string; // '计算机底层' | '前端与架构' | '算法思想' | '学习方法论' | '工程实践'

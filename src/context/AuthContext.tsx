@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   auth, 
+  hasFirebaseApiKey,
   db, 
   googleProvider, 
   signInWithPopup, 
@@ -83,6 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const registerWithEmail = async (email: string, pass: string, displayName: string, bio?: string) => {
+    if (!hasFirebaseApiKey) throw new Error('当前站点的登录服务尚未配置，请联系管理员完成配置。');
     setLoading(true);
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, pass);
@@ -128,6 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithEmail = async (email: string, pass: string) => {
+    if (!hasFirebaseApiKey) throw new Error('当前站点的登录服务尚未配置，请联系管理员完成配置。');
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
@@ -140,6 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithGoogle = async () => {
+    if (!hasFirebaseApiKey) throw new Error('当前站点的登录服务尚未配置，请联系管理员完成配置。');
     setLoading(true);
     try {
       await signInWithPopup(auth, googleProvider);

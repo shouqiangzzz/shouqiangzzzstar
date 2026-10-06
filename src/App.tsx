@@ -49,6 +49,8 @@ import { LifePost, ProductItem, StoryItem, StudyInsight, CartItem, OrderItem, Co
 import { useAuth } from './context/AuthContext';
 import { db, doc, setDoc, collection, onSnapshot, testFirestoreConnection } from './lib/firebase';
 import { mergePublishedRows, normalizeLifePost, normalizeStory, normalizeStudyInsight, publishContent, publishedDate } from './lib/publishContent';
+import { saveRecoveredVideo } from './lib/recoverLegacyVideo';
+import type { RecoverableCollection, RecoveredVideo } from './lib/recoverLegacyVideo';
 
 export default function App() {
   const { currentUser, userProfile } = useAuth();
@@ -213,6 +215,25 @@ export default function App() {
   }, [orders]);
 
   // Handlers
+  const handleRecoverVideo = async (
+    collectionName: RecoverableCollection,
+    id: string,
+    expectedSource: string,
+    video: RecoveredVideo
+  ) => {
+    const patch = await saveRecoveredVideo(collectionName, id, expectedSource, video);
+    if (collectionName === 'posts') {
+      setPosts((rows) => rows.map((row) => row.id === id ? { ...row, ...patch } : row));
+      setSelectedPost((row) => row?.id === id ? { ...row, ...patch } : row);
+    } else if (collectionName === 'stories') {
+      setStories((rows) => rows.map((row) => row.id === id ? { ...row, ...patch } : row));
+      setSelectedStory((row) => row?.id === id ? { ...row, ...patch } : row);
+    } else {
+      setInsights((rows) => rows.map((row) => row.id === id ? { ...row, ...patch } : row));
+      setSelectedInsight((row) => row?.id === id ? { ...row, ...patch } : row);
+    }
+  };
+
   const handleTogglePlant = (productId: string) => {
     setPlantedProductIds((prev) => {
       const exists = prev.includes(productId);
@@ -1225,6 +1246,8 @@ export default function App() {
         onToggleBookmark={handleToggleBookmark}
         onLike={handleLikePost}
         onAddComment={handleAddPostComment}
+        onRecoverVideo={selectedPost ? (video) => handleRecoverVideo('posts', selectedPost.id, selectedPost.videoUrl || '', video) : undefined}
+        onRequestLogin={() => { setAuthModalMode('login'); setIsAuthModalOpen(true); }}
       />
 
       <StudyInsightDetailModal
@@ -1232,6 +1255,8 @@ export default function App() {
         onClose={() => setSelectedInsight(null)}
         onLike={handleLikeInsight}
         onAddComment={handleAddInsightComment}
+        onRecoverVideo={selectedInsight ? (video) => handleRecoverVideo('insights', selectedInsight.id, selectedInsight.videoUrl || '', video) : undefined}
+        onRequestLogin={() => { setAuthModalMode('login'); setIsAuthModalOpen(true); }}
       />
 
       <ProductDetailModal
@@ -1249,6 +1274,8 @@ export default function App() {
         onClose={() => setSelectedStory(null)}
         onLike={handleLikeStory}
         onAddComment={handleAddStoryComment}
+        onRecoverVideo={selectedStory ? (video) => handleRecoverVideo('stories', selectedStory.id, selectedStory.videoUrl || '', video) : undefined}
+        onRequestLogin={() => { setAuthModalMode('login'); setIsAuthModalOpen(true); }}
       />
 
       <ShareInsightModal
@@ -1294,6 +1321,7 @@ export default function App() {
       />
 
       <AuthModal
+        key={authModalMode}
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         defaultMode={authModalMode}
