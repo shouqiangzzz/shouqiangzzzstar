@@ -1,0 +1,20 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /videos/{userId}/{uploadId}/{fileName} {
+      // Published original videos can be played by other community members.
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.size > 0
+                    && request.resource.size <= 100 * 1024 * 1024
+                    && request.resource.contentType.matches('video/(mp4|webm|quicktime)');
+      allow delete: if request.auth != null && request.auth.uid == userId;
+      // A new UUID is required for every new video; replacing existing bytes is denied.
+      allow update: if false;
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { VideoUrlInput } from './VideoUrlInput';
+import { VideoFileInput } from './VideoFileInput';
+import { videoMetadata } from '../utils/videoMetadata';
 import { useVideoAttachment } from '../hooks/useVideoAttachment';
 import { X, GraduationCap, Image as ImageIcon, Send, Lightbulb } from 'lucide-react';
-import { StudyInsight, MediaType } from '../types';
+import { StudyInsight } from '../types';
 
 interface ShareInsightModalProps {
   isOpen: boolean;
@@ -21,7 +22,6 @@ export const ShareInsightModal: React.FC<ShareInsightModalProps> = ({
   const [author, setAuthor] = useState('');
   const [takeaway, setTakeaway] = useState('');
   const [content, setContent] = useState('');
-  const [mediaType, setMediaType] = useState<MediaType>('mixed');
   const [coverImage, setCoverImage] = useState('');
   const videoAttachment = useVideoAttachment();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,7 +38,7 @@ export const ShareInsightModal: React.FC<ShareInsightModalProps> = ({
     setSubmitError('');
     setIsSubmitting(true);
     try {
-      const video = videoAttachment.requireVideo();
+      const video = await videoAttachment.prepareVideo();
       const tags = tagsStr
         .split(/[,，、 ]+/)
         .map(t => t.trim())
@@ -63,11 +63,10 @@ export const ShareInsightModal: React.FC<ShareInsightModalProps> = ({
         authorAvatar: `https://images.unsplash.com/photo-${1535713875002 + Math.floor(Math.random() * 100)}?auto=format&fit=crop&w=120&q=80`,
         takeaway: takeaway.trim(),
         content: content.trim(),
-        mediaType: video ? (mediaType === 'video' ? 'video' : 'mixed') : (mediaType === 'text' ? 'text' : 'image'),
+        mediaType: video ? 'mixed' : 'image',
         coverImage: chosenCover,
         images: [chosenCover],
-        videoUrl: video?.url,
-        videoDuration: video?.duration,
+        ...videoMetadata(video),
         tags: tags.length > 0 ? tags : ['学习心得', subject],
         likesCount: 1,
         comments: []
@@ -78,7 +77,7 @@ export const ShareInsightModal: React.FC<ShareInsightModalProps> = ({
       setTakeaway('');
       setContent('');
       setCoverImage('');
-      videoAttachment.setVideoUrl('');
+      videoAttachment.resetVideo();
       setTagsStr('');
       onClose();
     } catch (error) {
@@ -117,6 +116,7 @@ export const ShareInsightModal: React.FC<ShareInsightModalProps> = ({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-4">
           {submitError && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl p-3">{submitError}</p>}
+          {videoAttachment.uploading && <button type="button" onClick={videoAttachment.cancelUpload} className="text-sm text-rose-700 underline">取消视频上传</button>}
           <fieldset disabled={isSubmitting} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-stone-700 mb-1">
@@ -217,8 +217,8 @@ export const ShareInsightModal: React.FC<ShareInsightModalProps> = ({
               />
             </div>
 
-            <VideoUrlInput {...videoAttachment.inputProps} />
           </div>
+          <VideoFileInput {...videoAttachment.inputProps} disabled={isSubmitting} />
 
           <div>
             <label className="block text-xs font-semibold text-stone-700 mb-1">
@@ -244,11 +244,11 @@ export const ShareInsightModal: React.FC<ShareInsightModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || Boolean(videoAttachment.videoUrl.trim() && !videoAttachment.videoInfo)}
+              disabled={isSubmitting || !videoAttachment.canSubmit}
               className="px-5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center gap-1.5 shadow-xs transition-colors disabled:opacity-50"
             >
               <Send className="w-3.5 h-3.5" />
-              <span>{isSubmitting ? '正在发布…' : '发布学习心得'}</span>
+              <span>{videoAttachment.uploading ? `上传中 ${Math.round(videoAttachment.uploadProgress)}%` : isSubmitting ? '正在发布…' : '发布学习心得'}</span>
             </button>
           </div>
           </fieldset>

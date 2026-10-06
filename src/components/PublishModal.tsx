@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { VideoUrlInput } from './VideoUrlInput';
+import { VideoFileInput } from './VideoFileInput';
+import { videoMetadata } from '../utils/videoMetadata';
 import { useVideoAttachment } from '../hooks/useVideoAttachment';
 import { 
   X, 
@@ -76,8 +77,8 @@ export const PublishModal: React.FC<PublishModalProps> = ({
     setSubmitError('');
     setIsSubmitting(true);
     try {
-      const video = postVideo.requireVideo();
-      if (postMediaType === 'video' && !video) throw new Error('选择视频类型时，请先填写视频直链并完成预览验证。');
+      const video = await postVideo.prepareVideo();
+      if (postMediaType === 'video' && !video) throw new Error('选择视频类型时，请先选择本地原创视频并完成预览。');
       const tags = postTags.split(/[,，、 ]+/).map(t => t.trim()).filter(Boolean);
       const cover = postCoverImage.trim() || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80';
 
@@ -92,8 +93,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
         mediaType: video ? (postMediaType === 'video' ? 'video' : 'mixed') : (postMediaType === 'text' ? 'text' : 'image'),
         coverImage: cover,
         images: [cover],
-        videoUrl: video?.url,
-        videoDuration: video?.duration,
+        ...videoMetadata(video),
         tags: tags.length > 0 ? tags : ['生活记录'],
         likesCount: 1,
         bookmarksCount: 0,
@@ -105,7 +105,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
       setPostSummary('');
       setPostContent('');
       setPostCoverImage('');
-      postVideo.setVideoUrl('');
+      postVideo.resetVideo();
       setPostTags('');
       onClose();
     } catch (error) {
@@ -123,8 +123,8 @@ export const PublishModal: React.FC<PublishModalProps> = ({
     setSubmitError('');
     setIsSubmitting(true);
     try {
-      const video = insightVideo.requireVideo();
-      if (insightMediaType === 'video' && !video) throw new Error('选择视频类型时，请先填写视频直链并完成预览验证。');
+      const video = await insightVideo.prepareVideo();
+      if (insightMediaType === 'video' && !video) throw new Error('选择视频类型时，请先选择本地原创视频并完成预览。');
       const tags = insightTags.split(/[,，、 ]+/).map(t => t.trim()).filter(Boolean);
       const cover = insightCoverImage.trim() || 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80';
 
@@ -141,8 +141,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
         mediaType: video ? (insightMediaType === 'video' ? 'video' : 'mixed') : (insightMediaType === 'text' ? 'text' : 'image'),
         coverImage: cover,
         images: [cover],
-        videoUrl: video?.url,
-        videoDuration: video?.duration,
+        ...videoMetadata(video),
         tags: tags.length > 0 ? tags : ['学习心得', insightSubject],
         likesCount: 1,
         comments: []
@@ -154,7 +153,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
       setInsightTakeaway('');
       setInsightContent('');
       setInsightCoverImage('');
-      insightVideo.setVideoUrl('');
+      insightVideo.resetVideo();
       setInsightTags('');
       onClose();
     } catch (error) {
@@ -268,6 +267,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
         {activeType === 'post' && (
           <form onSubmit={handlePostSubmit} className="overflow-y-auto p-6 space-y-4">
             {submitError && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl p-3">{submitError}</p>}
+            {postVideo.uploading && <button type="button" onClick={postVideo.cancelUpload} className="text-sm text-rose-700 underline">取消视频上传</button>}
             <fieldset disabled={isSubmitting} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-stone-700 mb-1">
@@ -364,8 +364,8 @@ export const PublishModal: React.FC<PublishModalProps> = ({
                 />
               </div>
 
-              <VideoUrlInput {...postVideo.inputProps} />
             </div>
+            <VideoFileInput {...postVideo.inputProps} disabled={isSubmitting} />
 
             <div>
               <label className="block text-xs font-semibold text-stone-700 mb-1">标签</label>
@@ -389,10 +389,10 @@ export const PublishModal: React.FC<PublishModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting || Boolean(postVideo.videoUrl.trim() && !postVideo.videoInfo)}
+                disabled={isSubmitting || !postVideo.canSubmit}
                 className="px-5 py-2 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-xs transition-colors"
               >
-                {isSubmitting ? '正在发布…' : '发布到生活与经历'}
+                {postVideo.uploading ? `上传中 ${Math.round(postVideo.uploadProgress)}%` : isSubmitting ? '正在发布…' : '发布到生活与经历'}
               </button>
             </div>
             </fieldset>
@@ -403,6 +403,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
         {activeType === 'insight' && (
           <form onSubmit={handleInsightSubmit} className="overflow-y-auto p-6 space-y-4">
             {submitError && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl p-3">{submitError}</p>}
+            {insightVideo.uploading && <button type="button" onClick={insightVideo.cancelUpload} className="text-sm text-rose-700 underline">取消视频上传</button>}
             <fieldset disabled={isSubmitting} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-stone-700 mb-1">
@@ -492,8 +493,8 @@ export const PublishModal: React.FC<PublishModalProps> = ({
                 />
               </div>
 
-              <VideoUrlInput {...insightVideo.inputProps} />
             </div>
+            <VideoFileInput {...insightVideo.inputProps} disabled={isSubmitting} />
 
             <div>
               <label className="block text-xs font-semibold text-stone-700 mb-1">标签</label>
@@ -517,10 +518,10 @@ export const PublishModal: React.FC<PublishModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting || Boolean(insightVideo.videoUrl.trim() && !insightVideo.videoInfo)}
+                disabled={isSubmitting || !insightVideo.canSubmit}
                 className="px-5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-xs transition-colors"
               >
-                {isSubmitting ? '正在发布…' : '发布到学习心得'}
+                {insightVideo.uploading ? `上传中 ${Math.round(insightVideo.uploadProgress)}%` : isSubmitting ? '正在发布…' : '发布到学习心得'}
               </button>
             </div>
             </fieldset>

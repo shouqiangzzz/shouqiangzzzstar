@@ -1,14 +1,14 @@
-# Video publication regression checks
+# Original local video upload checks
 
-Run the dependency-free tests with Node.js 24:
+Run with Node.js 24:
 
 ```sh
 node --experimental-strip-types --test-isolation=none --test tests/*.test.mjs
 npm run build
 ```
 
-The tests cover original URL preservation, real duration formatting, invalid or temporary sources, optional Firestore fields, acknowledged publication, rejected writes, guest publication, and canonical cloud content replacing stale cached content.
+The tests cover local file validation, upload of the original File without transformation, progress and cancellation, uploaded media metadata, real duration, acknowledged publication, rejected writes, and cloud content replacing stale cached content.
 
-Browser verification should additionally check that a real video frame decodes before publication, playback starts at 1x with audio, source changes stop the previous video, HTML/404 sources cannot be published, and failed saves retain the draft. Use a local test backend for save failures; avoid publishing disposable test content to production.
+In the browser, choose a local video through the actual file picker. Verify the local preview, normal playback with sound, original bytes after upload and readback, and published playback after reopening the content. A local blob URL must never be stored in a published record. Upload and metadata-save failures must retain the selected file and draft; retrying a failed metadata save should reuse the completed file upload.
 
-The current repository publishes public video file URLs. A platform's share page or a temporary local blob URL is not a persistent video source. Invalid existing sources require the author's original public video URL. The committed Firebase API key is a placeholder; live account publication requires a valid Firebase web configuration.
+New publications use local file uploads. There is no video URL entry field. Existing content can still play its stored media URL. For live verification, supply the valid Firebase configuration and deploy the supplied Storage rules; local tests must not write disposable content to production.

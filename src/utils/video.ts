@@ -6,23 +6,36 @@ export interface VideoInfo {
 
 export const normalizeVideoUrl = (value: string): string => value.trim();
 
-/** Check durability and syntax here; the browser must also decode a video frame. */
+/** Published videos must point to the uploaded file, never a local preview URL. */
 export const getVideoUrlError = (value: string): string | null => {
   const url = normalizeVideoUrl(value);
   if (!url) return null;
   if (!/^https?:\/\//i.test(url) || /[\s\\]/.test(url)) {
-    return '请输入完整的 HTTP 或 HTTPS 视频直链，不要使用临时或本地地址。';
+    return '上传的视频地址无效，请作者重新上传原视频。';
   }
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return '请使用可公开访问的 HTTP 或 HTTPS 视频直链；临时 blob、data 和本地地址无法分享给其他用户。';
+      return '上传的视频地址无效，请作者重新上传原视频。';
     }
-    if (!parsed.hostname) return '请输入完整的视频直链。';
+    if (!parsed.hostname) return '上传的视频地址无效，请作者重新上传原视频。';
     return null;
   } catch {
-    return '请输入完整的 HTTP 或 HTTPS 视频直链。';
+    return '上传的视频地址无效，请作者重新上传原视频。';
   }
+};
+
+/** Only the file picker can opt in to a temporary local preview. */
+export const getVideoSourceError = (value: string, localPreview = false): string | null => {
+  const source = normalizeVideoUrl(value);
+  if (localPreview && /^blob:/i.test(source) && !/[\s\\]/.test(source)) {
+    try {
+      if (new URL(source).protocol === 'blob:') return null;
+    } catch {
+      return '无法读取这个本地视频，请重新选择文件。';
+    }
+  }
+  return getVideoUrlError(source);
 };
 
 export const isValidVideoDuration = (seconds: number): boolean =>
@@ -39,15 +52,19 @@ export const formatVideoDuration = (seconds: number): string => {
     : `${minutes}:${remaining}`;
 };
 
-export const getMediaErrorMessage = (code?: number): string => {
+export const getMediaErrorMessage = (code?: number, localPreview = false): string => {
   switch (code) {
     case 1:
       return '视频加载已中断，请重新加载。';
     case 2:
-      return '无法读取视频。请确认直链可公开访问、未过期，且服务器允许外部播放。';
+      return localPreview
+        ? '无法读取这个本地视频，请重新选择文件。'
+        : '无法读取上传的视频，请重新加载；若仍失败，请作者重新上传原视频。';
     case 3:
       return '浏览器无法解码此视频。请使用兼容的 MP4（H.264 视频、AAC 音频）或 WebM。';
     default:
-      return '此链接无法播放视频。请填写原视频文件的公开直链，而不是网页或分享页面链接。';
+      return localPreview
+        ? '这个文件无法播放，请选择兼容的 MP4（H.264 视频、AAC 音频）或 WebM 视频。'
+        : '上传的视频暂时无法播放，请重新加载或请作者重新上传原视频。';
   }
 };

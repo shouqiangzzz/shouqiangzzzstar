@@ -3,7 +3,7 @@ import { Play, RotateCcw } from 'lucide-react';
 import {
   formatVideoDuration,
   getMediaErrorMessage,
-  getVideoUrlError,
+  getVideoSourceError,
   isValidVideoDuration,
   normalizeVideoUrl,
 } from '../utils/video';
@@ -15,6 +15,7 @@ export interface VideoPlayerProps {
   poster?: string;
   className?: string;
   verify?: boolean;
+  localPreview?: boolean;
   onReady?: (info: VideoInfo) => void;
   onInvalid?: (url: string, message: string) => void;
   onChecking?: (url: string) => void;
@@ -23,7 +24,7 @@ export interface VideoPlayerProps {
 /** A source change mounts a fresh player so no previous source can keep playing. */
 export const VideoPlayer: React.FC<VideoPlayerProps> = (props) => {
   const src = normalizeVideoUrl(props.src);
-  return <SourceVideoPlayer key={src} {...props} src={src} />;
+  return <SourceVideoPlayer key={`${props.localPreview ? 'local' : 'uploaded'}:${src}`} {...props} src={src} />;
 };
 
 const SourceVideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -32,6 +33,7 @@ const SourceVideoPlayer: React.FC<VideoPlayerProps> = ({
   poster,
   className = '',
   verify = false,
+  localPreview = false,
   onReady,
   onInvalid,
   onChecking,
@@ -73,14 +75,14 @@ const SourceVideoPlayer: React.FC<VideoPlayerProps> = ({
     setError('');
     setDuration('');
     callbacks.current.onChecking?.(src);
-    const invalidUrl = getVideoUrlError(src);
+    const invalidUrl = getVideoSourceError(src, localPreview);
     if (!src || invalidUrl) {
-      fail(invalidUrl || '未提供视频地址。');
+      fail(invalidUrl || '未找到上传的视频文件。');
     } else {
       timerRef.current = setTimeout(() => {
-        fail(verify
-          ? '视频验证超时。请确认直链可访问，然后点击重新加载；验证成功前无法发布此视频。'
-          : '视频加载超时。请确认直链可访问，然后点击重新加载。');
+        fail(localPreview
+          ? '读取本地视频超时，请重新选择文件或使用兼容的 MP4 / WebM 视频。'
+          : '上传的视频加载超时，请检查网络后点击重新加载。');
       }, 15000);
     }
     const video = videoRef.current;
@@ -101,7 +103,7 @@ const SourceVideoPlayer: React.FC<VideoPlayerProps> = ({
         video.load();
       }
     };
-  }, [src, attempt, verify]);
+  }, [src, attempt, verify, localPreview]);
 
   const readMetadata = (video: HTMLVideoElement) => {
     if (!active.current || failed.current || video !== videoRef.current) return;
@@ -113,7 +115,7 @@ const SourceVideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleLoadedData = (video: HTMLVideoElement) => {
     if (!active.current || failed.current || video !== videoRef.current || video.readyState < 2) return;
     if (!isValidVideoDuration(video.duration) || video.videoWidth === 0 || video.videoHeight === 0) {
-      fail('未能读取完整的视频画面和时长。请使用有效的视频文件直链。');
+      fail('未能读取完整的视频画面和时长，请重新选择可播放的原视频文件。');
       return;
     }
     clearTimer();
@@ -130,7 +132,7 @@ const SourceVideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   };
 
-  const invalidUrl = getVideoUrlError(src);
+  const invalidUrl = getVideoSourceError(src, localPreview);
 
   return (
     <div className={`rounded-xl overflow-hidden bg-black shadow-inner ${className}`}>
@@ -170,7 +172,7 @@ const SourceVideoPlayer: React.FC<VideoPlayerProps> = ({
           onCanPlay={(event) => handleLoadedData(event.currentTarget)}
           onError={(event) => {
             if (event.currentTarget === videoRef.current) {
-              fail(getMediaErrorMessage(event.currentTarget.error?.code));
+              fail(getMediaErrorMessage(event.currentTarget.error?.code, localPreview));
             }
           }}
         >

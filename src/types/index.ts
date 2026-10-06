@@ -4,6 +4,16 @@ export type PostCategory = 'life' | 'study' | 'milestone' | 'tech';
 
 export type ProductCategory = 'electronics' | 'books' | 'snacks' | 'travel';
 
+export interface VideoMetadata {
+  videoUrl?: string;
+  videoDuration?: string;
+  videoDurationSeconds?: number;
+  videoStoragePath?: string;
+  videoFileName?: string;
+  videoSize?: number;
+  videoContentType?: string;
+}
+
 export interface Comment {
   id: string;
   author: string;
@@ -13,7 +23,7 @@ export interface Comment {
   likes: number;
 }
 
-export interface LifePost {
+export interface LifePost extends VideoMetadata {
   id: string;
   title: string;
   category: PostCategory;
@@ -24,8 +34,6 @@ export interface LifePost {
   mediaType: MediaType;
   coverImage: string;
   images: string[];
-  videoUrl?: string;
-  videoDuration?: string;
   tags: string[];
   likesCount: number;
   bookmarksCount: number;
@@ -55,7 +63,7 @@ export interface ProductItem {
   badge?: string;
 }
 
-export interface StoryItem {
+export interface StoryItem extends VideoMetadata {
   id: string;
   title: string;
   author: string;
@@ -66,8 +74,6 @@ export interface StoryItem {
   summary: string;
   content: string;
   coverImage?: string;
-  videoUrl?: string;
-  videoDuration?: string;
   tags: string[];
   likesCount: number;
   comments: Comment[];
@@ -89,7 +95,7 @@ export interface OrderItem {
   status: 'paid' | 'shipping' | 'completed';
 }
 
-export interface StudyInsight {
+export interface StudyInsight extends VideoMetadata {
   id: string;
   title: string;
   subject: string; // '计算机底层' | '前端与架构' | '算法思想' | '学习方法论' | '工程实践'
@@ -102,8 +108,6 @@ export interface StudyInsight {
   mediaType: MediaType;
   coverImage?: string;
   images?: string[];
-  videoUrl?: string;
-  videoDuration?: string;
   tags: string[];
   likesCount: number;
   comments: Comment[];

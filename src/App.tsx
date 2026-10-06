@@ -1252,18 +1252,21 @@ export default function App() {
       />
 
       <ShareInsightModal
+        key={`insight-${currentUser?.uid || 'guest'}`}
         isOpen={isShareInsightOpen}
         onClose={() => setIsShareInsightOpen(false)}
         onSubmit={handleAddNewInsight}
       />
 
       <ShareStoryModal
+        key={`story-${currentUser?.uid || 'guest'}`}
         isOpen={isShareStoryOpen}
         onClose={() => setIsShareStoryOpen(false)}
         onSubmit={handleAddNewStory}
       />
 
       <PublishModal
+        key={`publish-${currentUser?.uid || 'guest'}`}
         isOpen={isPublishOpen}
         onClose={() => setIsPublishOpen(false)}
         onAddPost={handleAddNewPost}
