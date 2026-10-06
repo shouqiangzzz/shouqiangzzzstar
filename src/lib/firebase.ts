@@ -20,7 +20,8 @@ import {
   collection, 
   query, 
   orderBy, 
-  onSnapshot 
+  onSnapshot,
+  deleteDoc
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { getStorage } from 'firebase/storage';
@@ -37,14 +38,40 @@ export const googleProvider = new GoogleAuthProvider();
  */
 export async function testFirestoreConnection(): Promise<boolean> {
   try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
+    const testPromise = getDocFromServer(doc(db, 'test', 'connection'));
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('the client is offline - connection timeout')), 3000)
+    );
+    await Promise.race([testPromise, timeoutPromise]);
     return true;
   } catch (error) {
     if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn("Please check your Firebase configuration or network status.");
+      console.warn("Firestore operates in offline/local cache mode.");
     }
     return false;
   }
+}
+
+/**
+ * Utility to strip undefined properties before saving to Cloud Firestore
+ * (Firestore throws an unhandled error if an object contains undefined fields)
+ */
+export function cleanForFirestore<T extends Record<string, any>>(obj: T): any {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) {
+    return obj.map(item => (typeof item === 'object' && item !== null ? cleanForFirestore(item) : item));
+  }
+  const clean: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      if (value !== null && typeof value === 'object' && !(value instanceof Date)) {
+        clean[key] = cleanForFirestore(value);
+      } else {
+        clean[key] = value;
+      }
+    }
+  }
+  return clean;
 }
 
 export { 
@@ -62,6 +89,7 @@ export {
   query,
   orderBy,
   onSnapshot,
+  deleteDoc,
   handleFirestoreError,
   OperationType
 };

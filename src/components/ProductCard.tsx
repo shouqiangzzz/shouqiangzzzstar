@@ -47,6 +47,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
+            onError={(e) => {
+              e.currentTarget.src = 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80';
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
@@ -94,6 +97,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           >
             {product.name}
           </h3>
+
+          {product.usageDuration && (
+            <div className="text-[10px] text-amber-900 font-medium bg-amber-100/60 px-2 py-0.5 rounded-md border border-amber-200/80 mb-2 w-fit">
+              ⏱️ {product.usageDuration.split('·')[0]}
+            </div>
+          )}
 
           {/* Reason for recommendation */}
           <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-100/80 mb-3 text-xs text-amber-900 leading-relaxed">

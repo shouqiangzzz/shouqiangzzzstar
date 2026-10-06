@@ -131,9 +131,9 @@ export const LifePostCard: React.FC<LifePostCardProps> = ({
 
           {/* Tags */}
           <div className="flex flex-wrap gap-1.5 mb-4">
-            {post.tags.map((tag) => (
+            {(post.tags || []).map((tag, idx) => (
               <span 
-                key={tag} 
+                key={`${tag}-${idx}`} 
                 className="text-[11px] px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 font-medium"
               >
                 #{tag}
@@ -151,7 +151,7 @@ export const LifePostCard: React.FC<LifePostCardProps> = ({
               className="flex items-center gap-1 hover:text-rose-600 transition-colors"
             >
               <Heart className="w-4 h-4 text-rose-500" />
-              <span>{post.likesCount}</span>
+              <span>{post.likesCount || 0}</span>
             </button>
 
             {/* Comments count */}
@@ -160,7 +160,7 @@ export const LifePostCard: React.FC<LifePostCardProps> = ({
               className="flex items-center gap-1 hover:text-stone-900 transition-colors"
             >
               <MessageCircle className="w-4 h-4" />
-              <span>{post.comments.length}</span>
+              <span>{post.comments?.length || 0}</span>
             </button>
           </div>
 

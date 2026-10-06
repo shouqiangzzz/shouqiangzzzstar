@@ -23,96 +23,82 @@ service cloud.firestore {
     // --- USERS COLLECTION ---
     match /users/{userId} {
       allow get: if isValidId(userId);
-      allow list: if isSignedIn();
-      allow create: if isOwner(userId) 
+      allow list: if true;
+      allow create: if isValidId(userId)
         && request.resource.data.uid == userId
         && request.resource.data.displayName is string
-        && request.resource.data.displayName.size() <= 100
-        && request.resource.data.email is string
-        && request.resource.data.email.size() <= 150;
-      allow update: if isOwner(userId)
-        && request.resource.data.uid == userId
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['uid', 'createdAt']));
+        && request.resource.data.displayName.size() <= 100;
+      allow update: if isValidId(userId)
+        && request.resource.data.uid == userId;
 
       // Private user subcollection
       match /private/info {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isValidId(userId);
       }
     }
 
     // --- LIFE POSTS COLLECTION ---
     match /posts/{postId} {
       allow read: if true;
-      allow create: if isSignedIn() 
-        && isValidId(postId)
-        && request.resource.data.authorId == request.auth.uid
+      allow create: if isValidId(postId)
         && request.resource.data.title is string
         && request.resource.data.title.size() <= 200;
-      allow update: if isSignedIn()
-        && (
-          // Like or bookmark counter increment
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'bookmarksCount', 'comments'])
-          // Or post author update
-          || (resource.data.authorId == request.auth.uid && request.resource.data.authorId == resource.data.authorId)
-        );
-      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow update: if isValidId(postId);
+      allow delete: if isValidId(postId);
     }
 
     // --- STUDY INSIGHTS COLLECTION ---
     match /insights/{insightId} {
       allow read: if true;
-      allow create: if isSignedIn()
-        && isValidId(insightId)
-        && request.resource.data.authorId == request.auth.uid
+      allow create: if isValidId(insightId)
         && request.resource.data.title is string
         && request.resource.data.title.size() <= 200;
-      allow update: if isSignedIn()
-        && (
-          // Like / comments update
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'comments'])
-          // Or author update
-          || (resource.data.authorId == request.auth.uid && request.resource.data.authorId == resource.data.authorId)
-        );
-      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow update: if isValidId(insightId);
+      allow delete: if isValidId(insightId);
     }
 
     // --- STORE PRODUCTS CATALOG ---
     match /products/{productId} {
       allow read: if true;
-      allow create: if isSignedIn()
-        && isValidId(productId)
+      allow create: if isValidId(productId)
         && request.resource.data.name is string
         && request.resource.data.name.size() <= 200;
-      allow update: if isSignedIn()
-        && (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['plantedCount', 'likesCount', 'comments', 'inStock'])
-          || request.auth.uid != null
-        );
+      allow update: if isValidId(productId);
     }
 
     // --- STORIES WALL COLLECTION ---
     match /stories/{storyId} {
       allow read: if true;
-      allow create: if isSignedIn()
-        && isValidId(storyId)
-        && request.resource.data.authorId == request.auth.uid
+      allow create: if isValidId(storyId)
         && request.resource.data.title is string
         && request.resource.data.title.size() <= 200;
-      allow update: if isSignedIn()
-        && (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'comments'])
-          || (resource.data.authorId == request.auth.uid)
-        );
-      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow update: if isValidId(storyId);
+      allow delete: if isValidId(storyId);
     }
 
     // --- ORDERS COLLECTION ---
     match /orders/{orderId} {
-      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid);
-      allow create: if isSignedIn() 
-        && isValidId(orderId)
-        && request.resource.data.userId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read: if isValidId(orderId);
+      allow create: if isValidId(orderId);
+      allow update: if isValidId(orderId);
+    }
+
+    // --- INVESTMENTS STORIES & Q&A COLLECTION ---
+    match /investments/{investmentId} {
+      allow read: if true;
+      allow create: if isValidId(investmentId)
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 200;
+      allow update: if isValidId(investmentId);
+      allow delete: if isValidId(investmentId);
+    }
+
+    // --- MODERATION EMAILS COLLECTION ---
+    match /moderation_emails/{emailId} {
+      allow read: if true;
+      allow create: if isValidId(emailId);
+      allow update: if isValidId(emailId);
+      allow delete: if isValidId(emailId);
     }
   }
 }

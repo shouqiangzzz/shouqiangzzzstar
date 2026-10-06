@@ -10,7 +10,11 @@ import {
   Send, 
   Sparkles,
   Share2,
-  CheckCircle
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  BookOpen,
+  ExternalLink
 } from 'lucide-react';
 import { ProductItem, Comment } from '../types';
 
@@ -22,6 +26,7 @@ interface ProductDetailModalProps {
   onAddToCart: (product: ProductItem, quantity: number) => void;
   onDirectBuy: (product: ProductItem, quantity: number) => void;
   onAddComment: (productId: string, comment: Comment) => void;
+  onOpenSharePoster?: (product: ProductItem) => void;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
@@ -31,7 +36,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onTogglePlant,
   onAddToCart,
   onDirectBuy,
-  onAddComment
+  onAddComment,
+  onOpenSharePoster
 }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -90,10 +96,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onOpenSharePoster && (
+              <button
+                onClick={() => onOpenSharePoster(product)}
+                className="px-2.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold text-xs flex items-center gap-1 transition-colors border border-amber-300/60"
+                title="生成精美社交分享海报"
+              >
+                <Share2 className="w-3.5 h-3.5 text-amber-700" />
+                <span>生成海报</span>
+              </button>
+            )}
             <button
               onClick={handleShare}
               className="p-2 text-stone-500 hover:text-stone-800 hover:bg-stone-200/60 rounded-full transition-colors"
-              title="分享好物"
+              title="复制链接"
             >
               {copied ? <CheckCircle className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4" />}
             </button>
@@ -116,6 +132,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   src={images[activeImageIndex] || product.image}
                   alt={product.name}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1000&q=80';
+                  }}
                 />
               </div>
 
@@ -129,7 +148,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         activeImageIndex === idx ? 'border-amber-500 scale-95' : 'border-transparent opacity-70 hover:opacity-100'
                       }`}
                     >
-                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      <img 
+                        src={img} 
+                        alt="" 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=200&q=80';
+                        }}
+                      />
                     </button>
                   ))}
                 </div>
@@ -190,8 +216,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </p>
                 </div>
 
+                {/* Usage Duration Badge */}
+                {product.usageDuration && (
+                  <div className="flex items-center gap-1.5 text-xs text-amber-900 bg-amber-100/70 px-2.5 py-1.5 rounded-xl border border-amber-200/80 mb-3 w-fit font-medium">
+                    <Clock className="w-3.5 h-3.5 text-amber-700" />
+                    <span>真实自用：{product.usageDuration}</span>
+                  </div>
+                )}
+
                 {/* Why I recommend */}
-                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 mb-4">
+                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 mb-3">
                   <div className="flex items-center gap-1.5 font-bold text-xs text-amber-900 mb-1">
                     <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                     <span>博主自用体验推荐理由：</span>
@@ -200,6 +234,35 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     {product.highlightReason}
                   </p>
                 </div>
+
+                {/* Honest Disadvantages & Who shouldn't buy */}
+                {product.honestDisadvantages && (
+                  <div className="p-3.5 rounded-xl bg-rose-50/80 border border-rose-200/80 mb-3">
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-rose-900 mb-1">
+                      <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                      <span>主理人缺点坦白 / 谁慎买：</span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-rose-900/90 leading-relaxed">
+                      {product.honestDisadvantages}
+                    </p>
+                  </div>
+                )}
+
+                {/* Related Article / Roadbook Link */}
+                {product.relatedContentTitle && (
+                  <div className="p-3 rounded-xl bg-stone-100 border border-stone-200 mb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs">
+                      <BookOpen className="w-4 h-4 text-amber-600 shrink-0" />
+                      <div className="text-stone-700">
+                        <span className="font-semibold text-stone-900">场景延伸：</span>
+                        <span>{product.relatedContentTitle}</span>
+                      </div>
+                    </div>
+                    <span className="text-xs text-amber-700 font-semibold shrink-0 flex items-center gap-0.5">
+                      查阅 <ExternalLink className="w-3 h-3" />
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Purchase Controls */}

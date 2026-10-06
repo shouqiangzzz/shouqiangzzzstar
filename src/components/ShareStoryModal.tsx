@@ -4,6 +4,7 @@ import { videoMetadata } from '../utils/videoMetadata';
 import { useVideoAttachment } from '../hooks/useVideoAttachment';
 import { X, MessageSquarePlus, Image as ImageIcon, Send } from 'lucide-react';
 import { StoryItem } from '../types';
+import { ImageUploadField } from './ImageUploadField';
 
 interface ShareStoryModalProps {
   isOpen: boolean;
@@ -200,20 +201,13 @@ export const ShareStoryModal: React.FC<ShareStoryModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
-                <ImageIcon className="w-3.5 h-3.5 text-stone-400" />
-                <span>封面配图 URL (选填)</span>
-              </label>
-              <input
-                type="url"
-                placeholder="https://images.unsplash.com/..."
-                value={coverImage}
-                onChange={(e) => setCoverImage(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl outline-hidden focus:border-rose-500 focus:bg-white"
-              />
-            </div>
+          <div className="space-y-3">
+            <ImageUploadField
+              label="封面配图"
+              value={coverImage}
+              onChange={setCoverImage}
+              helperText="支持点击选择或拖拽本地图片上传，亦支持网络图片直链"
+            />
 
           </div>
           <VideoFileInput {...videoAttachment.inputProps} disabled={isSubmitting} />

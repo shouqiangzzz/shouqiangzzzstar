@@ -133,6 +133,26 @@
         "status": { "type": "string", "enum": ["paid", "shipping", "completed"], "description": "Order status" }
       },
       "required": ["id", "userId", "totalAmount", "receiverName", "receiverAddress", "receiverPhone", "status"]
+    },
+    "Investment": {
+      "title": "Investment",
+      "description": "Investment stories, experience sharing and Q&A help posts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Investment post ID" },
+        "authorId": { "type": "string", "description": "Author UID" },
+        "author": { "type": "string", "maxLength": 100, "description": "Author display name" },
+        "title": { "type": "string", "maxLength": 200, "description": "Post title" },
+        "category": { "type": "string", "enum": ["stock_etf", "crypto", "value_investing", "qa_help", "pitfall_reflection", "macro_asset"], "description": "Category" },
+        "summary": { "type": "string", "maxLength": 500, "description": "Summary" },
+        "content": { "type": "string", "maxLength": 20000, "description": "Detailed story or question" },
+        "targetAsset": { "type": "string", "maxLength": 100, "description": "Target investment asset" },
+        "returnRate": { "type": "string", "maxLength": 50, "description": "Return rate or outcome" },
+        "experienceYears": { "type": "string", "maxLength": 50, "description": "Investor experience duration" },
+        "date": { "type": "string", "description": "Publish date" },
+        "likesCount": { "type": "number", "description": "Likes counter" }
+      },
+      "required": ["id", "authorId", "title", "category", "summary", "content"]
     }
   },
   "firestore": {
@@ -163,6 +183,10 @@
     "/orders/{orderId}": {
       "schema": { "$ref": "#/entities/Order" },
       "description": "Purchased orders"
+    },
+    "/investments/{investmentId}": {
+      "schema": { "$ref": "#/entities/Investment" },
+      "description": "Investment stories and Q&A posts"
     }
   }
 }

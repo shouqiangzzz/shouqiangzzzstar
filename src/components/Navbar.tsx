@@ -10,7 +10,9 @@ import {
   ShoppingCart,
   GraduationCap,
   User,
-  LogIn
+  LogIn,
+  ShieldCheck,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,10 +26,13 @@ interface NavbarProps {
   onOpenPublish: () => void;
   onOpenShareStory: () => void;
   onOpenShareInsight: () => void;
+  onOpenShareInvestment?: () => void;
   onOpenCart: () => void;
   onOpenPlanted: () => void;
   onOpenAuth: (mode?: 'login' | 'register') => void;
   onOpenProfile: () => void;
+  onOpenAdmin?: () => void;
+  pendingReviewCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -43,9 +48,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCart,
   onOpenPlanted,
   onOpenAuth,
-  onOpenProfile
+  onOpenProfile,
+  onOpenAdmin,
+  pendingReviewCount = 0
 }) => {
   const { currentUser, userProfile } = useAuth();
+  const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'creator' || userProfile?.email === 'shouqiangzzz@gmail.com' || userProfile?.email === 'shouqiangzzz@126.com';
 
   return (
     <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-stone-200/80 shadow-xs">
@@ -129,6 +137,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               <MessageSquare className="w-4 h-4 text-rose-500" />
               故事分享墙
             </button>
+
+            <button
+              onClick={() => setActiveTab('investments')}
+              className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                activeTab === 'investments'
+                  ? 'bg-stone-900 text-white shadow-xs'
+                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4 text-amber-500" />
+              投资实战
+            </button>
           </nav>
 
           {/* Search Bar & Actions */}
@@ -182,14 +202,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {/* User Auth or Profile Button */}
-            {currentUser && userProfile ? (
+            {userProfile ? (
               <button
                 onClick={onOpenProfile}
                 className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-xl bg-stone-100 hover:bg-amber-50 border border-stone-200 transition-colors"
                 title="打开用户中心"
               >
                 <img
-                  src={userProfile.photoURL}
+                  src={userProfile.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80'}
                   alt={userProfile.displayName}
                   className="w-6 h-6 rounded-full object-cover border border-amber-300"
                 />
@@ -204,6 +224,23 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>注册 / 登录</span>
+              </button>
+            )}
+
+            {/* Admin Console Button */}
+            {isAdmin && (
+              <button
+                onClick={onOpenAdmin}
+                className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-amber-400 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-950 text-xs font-bold transition-all shadow-2xs"
+                title="打开管理员控制台"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                <span className="hidden sm:inline">管理后台</span>
+                {pendingReviewCount > 0 && (
+                  <span className="min-w-[16px] h-[16px] px-1 bg-rose-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                    {pendingReviewCount}
+                  </span>
+                )}
               </button>
             )}
 
@@ -263,6 +300,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <MessageSquare className="w-3.5 h-3.5 text-rose-500" />
             故事墙
+          </button>
+          <button
+            onClick={() => setActiveTab('investments')}
+            className={`px-2.5 py-1 rounded-md shrink-0 flex items-center gap-1 ${
+              activeTab === 'investments' ? 'bg-stone-900 text-white font-medium' : 'text-stone-600'
+            }`}
+          >
+            <TrendingUp className="w-3.5 h-3.5 text-amber-500" />
+            投资板块
           </button>
         </div>
       </div>

@@ -24,7 +24,7 @@ export const StudyInsightCard: React.FC<StudyInsightCardProps> = ({
   onLike,
   onOpenDetail
 }) => {
-  const readingTime = calculateReadingTime(insight.content);
+  const readingTime = calculateReadingTime(insight.content || '');
 
   const getSubjectBadge = (subj: string) => {
     switch (subj) {
@@ -52,7 +52,7 @@ export const StudyInsightCard: React.FC<StudyInsightCardProps> = ({
     }
   };
 
-  const subjInfo = getSubjectBadge(insight.subject);
+  const subjInfo = getSubjectBadge(insight.subject || '其他');
 
   return (
     <article className="group bg-white rounded-2xl overflow-hidden border border-stone-200/80 hover:border-indigo-300 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
@@ -145,14 +145,14 @@ export const StudyInsightCard: React.FC<StudyInsightCardProps> = ({
               <span>核心心得感悟：</span>
             </div>
             <p className="line-clamp-2 text-stone-700 text-xs">
-              {insight.takeaway}
+              {insight.takeaway || ''}
             </p>
           </div>
 
           {/* Tags */}
           <div className="flex flex-wrap gap-1">
-            {insight.tags.map((tag) => (
-              <span key={tag} className="text-[10px] px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 font-medium">
+            {(insight.tags || []).map((tag, idx) => (
+              <span key={`${tag}-${idx}`} className="text-[10px] px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 font-medium">
                 #{tag}
               </span>
             ))}
@@ -168,7 +168,7 @@ export const StudyInsightCard: React.FC<StudyInsightCardProps> = ({
             className="flex items-center gap-1 hover:text-rose-600 transition-colors"
           >
             <Heart className="w-3.5 h-3.5 text-rose-500" />
-            <span>{insight.likesCount}</span>
+            <span>{insight.likesCount || 0}</span>
           </button>
 
           <button
@@ -176,7 +176,7 @@ export const StudyInsightCard: React.FC<StudyInsightCardProps> = ({
             className="flex items-center gap-1 hover:text-stone-900 transition-colors"
           >
             <MessageSquare className="w-3.5 h-3.5" />
-            <span>{insight.comments.length}</span>
+            <span>{insight.comments?.length || 0}</span>
           </button>
         </div>
 
